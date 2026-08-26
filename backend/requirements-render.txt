@@ -1,0 +1,21 @@
+# Render.com deployment — lightweight (no torch/ML models)
+# All API endpoints work EXCEPT POST /process/image and POST /process/video
+# (those require torch+ultralytics which exceed Render free tier RAM/build time)
+# The app detects missing ML deps gracefully and returns a clear error message.
+
+# ── Core API ──────────────────────────────────────────────────────────────────
+fastapi==0.111.1
+uvicorn[standard]==0.30.3
+python-multipart==0.0.9
+pydantic==2.7.4
+
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.31
+
+# ── Image processing (lightweight) ───────────────────────────────────────────
+numpy>=2.0.0
+opencv-python-headless>=4.10.0.84
+pillow>=10.0.0
+
+# ── Testing/HTTP ──────────────────────────────────────────────────────────────
+httpx==0.27.0

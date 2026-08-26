@@ -1,6 +1,8 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "cd urban-eye-ai && pnpm install && pnpm run build",
-  "outputDirectory": "urban-eye-ai/.next",
-  "installCommand": "cd urban-eye-ai && pnpm install"
+  "rewrites": [
+    {
+      "source": "/((?!api|_next|static|favicon|public).*)",
+      "destination": "/"
+    }
+  ]
 }

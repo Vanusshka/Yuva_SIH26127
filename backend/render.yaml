@@ -1,12 +1,13 @@
 services:
   - type: web
     name: urbaneye-ai-backend
-    runtime: docker
-    dockerfilePath: ./Dockerfile
+    runtime: python
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     plan: free
     healthCheckPath: /health
     envVars:
-      - key: PORT
-        value: 10000
       - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: RENDER
         value: "1"
