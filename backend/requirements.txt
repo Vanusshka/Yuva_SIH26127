@@ -1,5 +1,11 @@
+# UrbanEye AI Backend — Requirements
+# Python 3.12 recommended (has pre-built wheels for all packages)
+#
+# INSTALLATION ORDER (for Railway/Render Docker):
+#   1. pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#   2. pip install -r requirements.txt
+
 # ── Core API ──────────────────────────────────────────────────────────────────
-# Versions pinned to work with Python 3.11 / 3.12 / 3.13
 fastapi==0.111.1
 uvicorn[standard]==0.30.3
 python-multipart==0.0.9
@@ -7,25 +13,16 @@ pydantic==2.7.4
 
 # ── Database ──────────────────────────────────────────────────────────────────
 sqlalchemy==2.0.31
-# Optional PostgreSQL driver (install when switching from SQLite):
-# psycopg2-binary==2.9.9
 
 # ── Computer Vision ───────────────────────────────────────────────────────────
-# numpy 2.x required for Python 3.13+ (1.26.x has no cp313 wheel)
 numpy>=2.0.0
-opencv-python>=4.10.0.84
+opencv-python-headless>=4.10.0.84
 
 # ── OCR ───────────────────────────────────────────────────────────────────────
 easyocr>=1.7.1
 
-# ── Deep Learning (CPU build – swap for CUDA wheel for GPU) ──────────────────
-# torch 2.3.x has no cp313 wheel; use >=2.4 which supports Python 3.13
-torch>=2.4.0
-torchvision>=0.19.0
-
-# ── Object Detection ─────────────────────────────────────────────────────────
+# ── Object Detection (torch installed separately — see Dockerfile/nixpacks) ───
 ultralytics>=8.2.87
 
 # ── Testing ───────────────────────────────────────────────────────────────────
-pytest==8.2.2
 httpx==0.27.0

@@ -1,8 +1,6 @@
 {
-  "comment": "This file tells Vercel to deploy the urban-eye-ai Next.js app.",
   "framework": "nextjs",
-  "root": "urban-eye-ai",
-  "buildCommand": "pnpm run build",
-  "installCommand": "pnpm install",
-  "outputDirectory": "urban-eye-ai/.next"
+  "buildCommand": "cd urban-eye-ai && pnpm install && pnpm run build",
+  "outputDirectory": "urban-eye-ai/.next",
+  "installCommand": "cd urban-eye-ai && pnpm install"
 }

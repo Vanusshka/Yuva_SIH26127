@@ -2,14 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "pnpm run build",
   "installCommand": "pnpm install",
-  "outputDirectory": ".next",
-  "env": {
-    "NEXT_PUBLIC_DEMO_MODE": "true"
-  },
-  "rewrites": [
-    {
-      "source": "/((?!api|_next|static|favicon|public).*)",
-      "destination": "/"
-    }
-  ]
+  "outputDirectory": ".next"
 }
