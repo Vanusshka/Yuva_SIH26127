@@ -27,9 +27,10 @@ import {
 import {
   fetchHealth, fetchAnalytics, fetchVehicle, fetchTrajectory,
   fetchAlerts, fetchCameras, fetchVehicles,
+  fetchManualReviews, submitReviewDecision,
   type HealthResponse, type AnalyticsResponse, type VehicleRecord,
   type TrajectoryResponse, type AlertsResponse, type CameraItem,
-  type VehicleListResponse,
+  type VehicleListResponse, type ManualReviewItem,
   DEMO_HEALTH, DEMO_ANALYTICS, ApiError,
 } from '@/lib/api'
 
@@ -790,14 +791,47 @@ export function Alerts() {
             ? <Loading />
             : filteredAlerts.length > 0
               ? (
-                <Table rows={filteredAlerts.slice(0, 20).map(a => [
-                  a.alert_type.replace(/_/g, ' '),
-                  a.severity,
-                  a.camera_id ?? a.location ?? '—',
-                  relativeTime(a.timestamp),
-                ])} />
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr><th>TYPE</th><th>SEVERITY</th><th>PLATE</th><th>LOCATION</th><th>TIME</th></tr>
+                    </thead>
+                    <tbody>
+                      {filteredAlerts.slice(0, 20).map(a => (
+                        <tr key={a.alert_id}>
+                          <td>
+                            <span style={{
+                              fontSize: 9, fontWeight: 700, letterSpacing: '.4px',
+                              padding: '3px 7px', borderRadius: 10,
+                              background:
+                                a.alert_type === 'BLACKLISTED_VEHICLE'  ? '#fce8e8' :
+                                a.alert_type === 'COMPLIANCE_ANOMALY'   ? '#fff0d5' :
+                                a.alert_type.includes('TRAJECTORY')     ? '#eae8fa' :
+                                a.alert_type === 'CONGESTION'           ? '#fff3dd' :
+                                '#e0f4f9',
+                              color:
+                                a.alert_type === 'BLACKLISTED_VEHICLE'  ? '#b94040' :
+                                a.alert_type === 'COMPLIANCE_ANOMALY'   ? '#c28118' :
+                                a.alert_type.includes('TRAJECTORY')     ? '#7769ca' :
+                                a.alert_type === 'CONGESTION'           ? '#c28118' :
+                                '#0c7f9d',
+                            }}>
+                              {a.alert_type.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td><span className={`status-pill ${a.severity === 'CRITICAL' ? 'red' : a.severity === 'WARNING' ? 'amber' : 'cyan'}`}>{a.severity}</span></td>
+                          <td>{a.plate_number || '—'}</td>
+                          <td>{a.location ?? a.camera_id ?? '—'}</td>
+                          <td>{relativeTime(a.timestamp)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )
-              : <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>No alerts match your search.</p>
+              : <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                  {data ? 'No alerts match your search.' : 'No alerts found.'}
+                </p>
           }
         </div>
       </Panel>
@@ -935,6 +969,226 @@ export function SystemHealth() {
           ))}
         </div>
       </Panel>
+    </>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MANUAL REVIEW PAGE  ✅ live: /manual-review  (Change 6 — Reliability Upgrade)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function ManualReviewPage() {
+  const [items,    setItems]    = useState<ManualReviewItem[]>([])
+  const [total,    setTotal]    = useState(0)
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState<string | null>(null)
+  const [filter,   setFilter]   = useState<string>('PENDING')
+  const [submitting, setSubmitting] = useState<number | null>(null)
+  const [editPlate,  setEditPlate]  = useState<string>('')
+  const [editId,     setEditId]     = useState<number | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await fetchManualReviews(filter === 'ALL' ? undefined : filter, 50, 0)
+      setItems(data.items)
+      setTotal(data.total)
+      setError(null)
+    } catch (err) {
+      setError(`${(err as ApiError).detail ?? 'Network error'}`)
+    } finally {
+      setLoading(false)
+    }
+  }, [filter])
+
+  useEffect(() => { load() }, [load])
+
+  const decide = useCallback(async (
+    id: number,
+    decision: 'CONFIRMED' | 'REJECTED' | 'EDITED',
+    plate?: string,
+  ) => {
+    setSubmitting(id)
+    try {
+      await submitReviewDecision(id, decision, plate)
+      await load()
+    } catch (err) {
+      alert(`Decision failed: ${(err as ApiError).detail ?? (err as Error).message}`)
+    } finally {
+      setSubmitting(null)
+      setEditId(null)
+      setEditPlate('')
+    }
+  }, [load])
+
+  const tierColour = (tier: string) => ({
+    HIGH:   { bg: '#dff5ec', color: '#169266' },
+    MEDIUM: { bg: '#fff3dd', color: '#c28118' },
+    LOW:    { bg: '#fce9e9', color: '#b94040' },
+  }[tier.toUpperCase()] ?? { bg: '#eef3f7', color: '#6d7f92' })
+
+  const statusColour = (st: string) => ({
+    PENDING:   { bg: '#e0f4f9', color: '#0c7f9d' },
+    CONFIRMED: { bg: '#dff5ec', color: '#169266' },
+    REJECTED:  { bg: '#fce9e9', color: '#b94040' },
+    EDITED:    { bg: '#eae8fa', color: '#7769ca' },
+  }[st.toUpperCase()] ?? { bg: '#eef3f7', color: '#6d7f92' })
+
+  return (
+    <>
+      <div style={{ marginBottom: 14, padding: '8px 14px', background: '#fff8ee', borderRadius: 7, fontSize: 10, color: '#c28118', border: '1px solid #f8d38b' }}>
+        <strong>Change 5 — Blacklist Safety Gate:</strong> LOW-confidence plate reads never auto-trigger blacklist alerts.
+        They appear here for human verification before any action is taken.
+        Only CONFIRMED or EDITED items become eligible for blacklist matching.
+      </div>
+
+      {/* Filter tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 17, flexWrap: 'wrap' }}>
+        {['PENDING', 'CONFIRMED', 'REJECTED', 'EDITED', 'ALL'].map(s => (
+          <button
+            key={s}
+            className={filter === s ? 'primary-button' : 'date-button'}
+            style={{ fontSize: 11, padding: '7px 14px' }}
+            onClick={() => setFilter(s)}
+          >
+            {s}
+          </button>
+        ))}
+        <div style={{ marginLeft: 'auto' }}>
+          <button className="date-button" onClick={load} style={{ fontSize: 11 }}>
+            <RefreshCw size={12} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      {loading && <Loading label="Loading review queue…" />}
+      {error   && <ErrorBanner message={error} onRetry={load} />}
+
+      {!loading && items.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted-foreground)', fontSize: 12 }}>
+          No {filter === 'ALL' ? '' : filter.toLowerCase()} review items.
+          {filter === 'PENDING' && ' Process a video to populate this queue.'}
+        </div>
+      )}
+
+      {/* Review items */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {items.map(item => {
+          const tc = tierColour(item.confidence_tier)
+          const sc = statusColour(item.review_status)
+          const isEditing = editId === item.id
+          return (
+            <div key={item.id} className="panel" style={{ padding: 0 }}>
+              <div style={{ padding: '14px 18px' }}>
+                {/* Header row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--foreground)' }}>
+                        {item.ocr_plate_text || '(no plate text)'}
+                      </span>
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: tc.bg, color: tc.color }}>
+                        {item.confidence_tier} CONFIDENCE
+                      </span>
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: sc.bg, color: sc.color }}>
+                        {item.review_status}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--muted-foreground)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <span>📷 {item.camera_id}</span>
+                      <span>🚗 {item.vehicle_type ?? '—'} ({item.vehicle_category ?? '—'})</span>
+                      <span>🕐 {new Date(item.timestamp).toLocaleString()}</span>
+                      <span>📁 {item.source_file ?? '—'}</span>
+                      {item.frame_number !== null && <span>Frame #{item.frame_number}</span>}
+                    </div>
+                  </div>
+                  {item.review_status === 'PENDING' && (
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button
+                        className="date-button"
+                        style={{ fontSize: 10, padding: '5px 10px', color: '#169266', borderColor: '#169266' }}
+                        disabled={submitting === item.id}
+                        onClick={() => decide(item.id, 'CONFIRMED')}
+                      >
+                        {submitting === item.id ? <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> : '✓'} Confirm
+                      </button>
+                      <button
+                        className="date-button"
+                        style={{ fontSize: 10, padding: '5px 10px' }}
+                        onClick={() => { setEditId(item.id); setEditPlate(item.ocr_plate_text ?? '') }}
+                      >
+                        ✏ Edit
+                      </button>
+                      <button
+                        className="date-button"
+                        style={{ fontSize: 10, padding: '5px 10px', color: '#b94040', borderColor: '#b94040' }}
+                        disabled={submitting === item.id}
+                        onClick={() => decide(item.id, 'REJECTED')}
+                      >
+                        ✗ Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Evidence row */}
+                <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, fontSize: 10 }}>
+                  {[
+                    ['Agreement rate', item.agreement_rate !== null ? `${((item.agreement_rate ?? 0) * 100).toFixed(0)}%` : '—'],
+                    ['Valid OCR reads', String(item.valid_ocr_reads ?? '—')],
+                    ['Matching reads',  String(item.matching_ocr_reads ?? '—')],
+                    ['OCR confidence',  item.ocr_confidence !== null ? `${((item.ocr_confidence ?? 0) * 100).toFixed(1)}%` : '—'],
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ padding: '6px 10px', background: '#f6f9fb', borderRadius: 6 }}>
+                      <span style={{ display: 'block', color: 'var(--muted-foreground)', marginBottom: 2 }}>{k}</span>
+                      <strong>{v}</strong>
+                    </div>
+                  ))}
+                </div>
+
+                <p style={{ fontSize: 9, color: '#9aa8b5', marginTop: 6 }}>
+                  Reason: {item.reason} · Track: {item.track_id ?? '—'} · Created: {new Date(item.created_at).toLocaleString()}
+                </p>
+
+                {/* Inline edit panel */}
+                {isEditing && (
+                  <div style={{ marginTop: 10, padding: '10px 12px', background: '#f0f6fb', borderRadius: 7, display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700 }}>Corrected plate:</span>
+                    <input
+                      style={{ flex: 1, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontWeight: 700 }}
+                      value={editPlate}
+                      onChange={e => setEditPlate(e.target.value.toUpperCase())}
+                      placeholder="e.g. TS09AB1234"
+                    />
+                    <button
+                      className="primary-button"
+                      style={{ fontSize: 11, padding: '6px 14px' }}
+                      disabled={!editPlate.trim() || submitting === item.id}
+                      onClick={() => decide(item.id, 'EDITED', editPlate.trim())}
+                    >
+                      Save
+                    </button>
+                    <button className="date-button" style={{ fontSize: 11 }} onClick={() => setEditId(null)}>Cancel</button>
+                  </div>
+                )}
+
+                {/* Confirmed / edited outcome */}
+                {item.review_status !== 'PENDING' && item.reviewed_plate && (
+                  <div style={{ marginTop: 8, fontSize: 10, color: '#169266' }}>
+                    ✓ Verified plate: <strong>{item.reviewed_plate}</strong>
+                    {item.reviewer_notes && <span style={{ color: 'var(--muted-foreground)', marginLeft: 8 }}>{item.reviewer_notes}</span>}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <p style={{ fontSize: 9, color: 'var(--muted-foreground)', marginTop: 14 }}>
+        Total: {total} items · Showing {items.length} · Only CONFIRMED/EDITED items are eligible for blacklist matching.
+      </p>
     </>
   )
 }

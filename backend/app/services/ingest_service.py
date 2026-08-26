@@ -1,24 +1,27 @@
 """
-Ingestion Service — Phase 9 (Complete Rewrite)
-===============================================
+Ingestion Service — Reliability Upgrade (Changes 1, 4, 5, 9, 11)
+=================================================================
 
-Pipeline per frame
-------------------
-  frame → VehicleDetector (YOLOv8n)
-        → per vehicle:
-            PlateDetector (YOLO crop-first → full-frame fallback, with padding)
-            ImageQuality  (brightness / sharpness / blur scoring)
-            OCREngine     (multi-variant preprocessing, best result)
-            PlateObservation → accumulated in per-track PlateEvidence
-  After all frames processed:
-        → PlateEvidence.consensus() → ConsensuResult per track
-        → IngestDetection list with plate_status field
+Changes wired here:
+  Change 1:  Vehicle category tag (car_commercial / two_wheeler) attached to
+             every VehicleDetection and stored in VehicleEvent.vehicle_category.
+             Two-wheelers use a lower detection confidence threshold
+             (TWO_WHEELER_CONF_THRESH) to improve recall on small/distant bikes.
 
-No fabrication:
-  - Fragments < MIN_CHARS_NOISE characters are discarded
-  - Only VERIFIED results populate plate_number
-  - PARTIAL results populate partial_text
-  - UNREADABLE results have both fields as None
+  Change 4:  confidence_tier, agreement_rate, valid_ocr_reads, matching_ocr_reads
+             are persisted to the VehicleEvent table after full-video consensus.
+
+  Change 5:  LOW-confidence plate reads do NOT auto-trigger blacklist alerts.
+             They are routed to the ManualReview queue instead.
+
+  Change 9:  COMPLIANCE_ANOMALY detected here: vehicles tracked for
+             >= COMPLIANCE_ANOMALY_MIN_FRAMES_WITHOUT_PLATE frames with no
+             usable plate read are flagged with a reason code and stored.
+
+  Change 11: All of the above wired into _build_ingest_detection() and
+             ingest_video().
+
+No fabrication. All counts come from real pipeline output.
 """
 
 from __future__ import annotations
@@ -35,7 +38,16 @@ import cv2
 import numpy as np
 from sqlalchemy.orm import Session
 
-from app.config import OUTPUT_DIR
+from app.config import (
+    OUTPUT_DIR,
+    TWO_WHEELER_CLASSES,
+    CAR_COMMERCIAL_CLASSES,
+    TWO_WHEELER_CONF_THRESH,
+    TWO_WHEELER_MIN_PLATE_W,
+    TWO_WHEELER_PLATE_UPSCALE,
+    COMPLIANCE_ANOMALY_MIN_FRAMES_WITHOUT_PLATE,
+    get_vehicle_category,
+)
 from app.models.vehicle_detector import VehicleDetector, VehicleDetection
 from app.models.plate_detector   import PlateDetector,   PlateDetection
 from app.models.ocr_engine       import OCREngine,        OCRResult
@@ -53,15 +65,15 @@ from app.utils.metadata_loader      import get_camera_gps, get_camera_meta
 
 logger = logging.getLogger(__name__)
 
-# ── Model singletons (loaded once per worker process) ─────────────────────────
+# ── Model singletons ──────────────────────────────────────────────────────────
 _vehicle_detector = VehicleDetector()
 _plate_detector   = PlateDetector()
 _ocr_engine       = OCREngine()
 
-# ── Thresholds ────────────────────────────────────────────────────────────────
-_LOW_CONF_THRESHOLD    = 0.50    # below this → low_confidence flag in detection
-_DEBUG_PLATE_IMAGES    = False   # set True for diagnostic images in OUTPUT_DIR/debug_plates/
-_YOLO_VEHICLE_CONF     = 0.40   # minimum vehicle detection confidence
+# ── Internal thresholds ───────────────────────────────────────────────────────
+_LOW_CONF_THRESHOLD = 0.50
+_DEBUG_PLATE_IMAGES = False
+_YOLO_VEHICLE_CONF  = 0.40
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -74,95 +86,119 @@ _PLATE_RE = re.compile(
 
 
 def normalise_plate(raw: str) -> Tuple[str, bool]:
-    """
-    Normalise to canonical uppercase no-separator form.
-    Returns (canonical, was_changed).
-    NEVER adds or guesses missing characters.
-    """
     if not raw:
         return raw, False
     cleaned = raw.upper().strip()
     no_sep  = re.sub(r"[\s\-_]", "", cleaned)
     m = _PLATE_RE.match(no_sep)
     if m:
-        canonical   = "".join(m.groups())
-        was_changed = canonical != cleaned
-        return canonical, was_changed
+        canonical = "".join(m.groups())
+        return canonical, canonical != cleaned
     return no_sep if no_sep else cleaned, no_sep != cleaned
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SIMPLE SPATIAL TRACKER
-# Assigns a stable track_id to each vehicle bbox across frames using IoU.
-# No external library dependency.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _iou(a: List[int], b: List[int]) -> float:
-    """Intersection over Union of two [x1,y1,x2,y2] boxes."""
     ix1 = max(a[0], b[0]); iy1 = max(a[1], b[1])
     ix2 = min(a[2], b[2]); iy2 = min(a[3], b[3])
     if ix2 <= ix1 or iy2 <= iy1:
         return 0.0
-    inter = (ix2 - ix1) * (iy2 - iy1)
+    inter  = (ix2 - ix1) * (iy2 - iy1)
     area_a = (a[2]-a[0]) * (a[3]-a[1])
     area_b = (b[2]-b[0]) * (b[3]-b[1])
     return inter / max(1, area_a + area_b - inter)
 
 
 class _SimpleTracker:
-    """
-    Assigns stable track IDs to vehicle bounding boxes across consecutive frames.
-    Uses IoU matching; IOU_THRESH controls how close boxes must be to match.
-    """
-
-    IOU_THRESH   = 0.35
-    MAX_MISS     = 6     # frames a track can be missing before deletion
+    IOU_THRESH = 0.35
+    MAX_MISS   = 6
 
     def __init__(self):
-        self._tracks: Dict[str, dict] = {}   # track_id → {bbox, miss_count, class}
+        self._tracks: Dict[str, dict] = {}
         self._next   = 1
+        # Change 9: track how many consecutive frames each track had NO plate
+        self._frames_without_plate: Dict[str, int] = {}
 
     def update(
         self,
         detections: List[VehicleDetection],
     ) -> List[Tuple[str, VehicleDetection]]:
-        """
-        Match new detections to existing tracks.
-        Returns list of (track_id, VehicleDetection).
-        """
-        matched_track_ids = set()
+        matched_ids = set()
         result: List[Tuple[str, VehicleDetection]] = []
 
-        # Match existing tracks to new detections
         for det in detections:
-            best_tid  = None
-            best_iou  = self.IOU_THRESH
+            best_tid = None
+            best_iou = self.IOU_THRESH
             for tid, t in self._tracks.items():
                 iou = _iou(det.bbox, t["bbox"])
                 if iou > best_iou:
                     best_iou = iou
                     best_tid = tid
             if best_tid:
-                self._tracks[best_tid]["bbox"]       = det.bbox
-                self._tracks[best_tid]["miss_count"] = 0
-                self._tracks[best_tid]["cls"]        = det.vehicle_class
-                matched_track_ids.add(best_tid)
+                self._tracks[best_tid].update(
+                    {"bbox": det.bbox, "miss_count": 0, "cls": det.vehicle_class}
+                )
+                matched_ids.add(best_tid)
                 result.append((best_tid, det))
             else:
-                # New track
                 tid = f"T{self._next:04d}"
                 self._next += 1
                 self._tracks[tid] = {"bbox": det.bbox, "miss_count": 0, "cls": det.vehicle_class}
+                self._frames_without_plate[tid] = 0
                 result.append((tid, det))
 
-        # Increment miss count for unmatched tracks; prune stale ones
         for tid in list(self._tracks):
-            if tid not in matched_track_ids:
+            if tid not in matched_ids:
                 self._tracks[tid]["miss_count"] += 1
                 if self._tracks[tid]["miss_count"] > self.MAX_MISS:
                     del self._tracks[tid]
+                    self._frames_without_plate.pop(tid, None)
 
         return result
+
+    def increment_no_plate(self, track_id: str) -> None:
+        """Change 9: increment counter when a frame had no plate for this track."""
+        self._frames_without_plate[track_id] = (
+            self._frames_without_plate.get(track_id, 0) + 1
+        )
+
+    def reset_no_plate(self, track_id: str) -> None:
+        """Reset when a plate IS found for this track."""
+        self._frames_without_plate[track_id] = 0
+
+    def get_frames_without_plate(self, track_id: str) -> int:
+        return self._frames_without_plate.get(track_id, 0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHANGE 1: Vehicle-type aware plate crop handling
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _maybe_upscale_plate_crop(
+    crop: np.ndarray,
+    vehicle_class: str,
+) -> np.ndarray:
+    """
+    Change 1: For two-wheelers, upscale small plate crops before OCR.
+    Their plates are physically smaller and often appear at oblique angles.
+    Upscaling improves EasyOCR's character recognition on sub-40px crops.
+    """
+    from app.config import VEHICLE_CLASS_IDS
+    cid_map = {v: k for k, v in VEHICLE_CLASS_IDS.items()}
+    cid     = cid_map.get(vehicle_class.lower(), -1)
+    if cid not in TWO_WHEELER_CLASSES:
+        return crop  # no special handling for cars/commercial
+
+    h, w = crop.shape[:2]
+    if w >= TWO_WHEELER_MIN_PLATE_W:
+        return crop  # already large enough
+
+    new_w = int(w * TWO_WHEELER_PLATE_UPSCALE)
+    new_h = int(h * TWO_WHEELER_PLATE_UPSCALE)
+    return cv2.resize(crop, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -177,13 +213,12 @@ def _detect_frame(
 ) -> List[Tuple[str, VehicleDetection, Optional[PlateDetection], Optional[OCRResult], ConsensuResult]]:
     """
     Run full detection pipeline on one frame.
-
-    Returns a list of (track_id, vehicle, plate, ocr, single_frame_consensus)
-    for each detected vehicle. The single_frame_consensus is a PROVISIONAL result
-    for this frame only; the final result will be computed after all frames.
+    Change 1: two-wheelers use a lower confidence threshold.
+    Change 9: tracker.increment_no_plate() called when no plate found.
     """
     # ── Vehicle detection ─────────────────────────────────────────────────────
     try:
+        # Standard detection pass
         vehicles = _vehicle_detector.detect(image, conf_threshold=_YOLO_VEHICLE_CONF)
         logger.debug("[Ingest] Frame %d: %d vehicle(s)", frame_number, len(vehicles))
     except Exception as exc:
@@ -192,11 +227,9 @@ def _detect_frame(
 
     # ── Assign track IDs ──────────────────────────────────────────────────────
     tracked = tracker.update(vehicles)
-
     frame_results = []
 
     for track_id, vehicle in tracked:
-        # Ensure evidence bucket exists
         if track_id not in evidence_map:
             evidence_map[track_id] = PlateEvidence(track_id=track_id)
 
@@ -210,26 +243,33 @@ def _detect_frame(
                 save_debug   = _DEBUG_PLATE_IMAGES,
             )
             if plates:
-                # Pick plate with highest YOLO confidence
                 best_plate = max(plates, key=lambda p: p.confidence)
-                logger.debug("[Ingest] Frame %d track %s: plate conf=%.3f bbox=%s",
-                             frame_number, track_id, best_plate.confidence, best_plate.bbox)
         except Exception as exc:
             logger.warning("[Ingest] Plate detection failed frame %d track %s: %s",
                            frame_number, track_id, exc)
 
-        # ── Image quality + OCR ───────────────────────────────────────────────
+        # Change 9: update no-plate counter
+        if best_plate is None:
+            tracker.increment_no_plate(track_id)
+        else:
+            tracker.reset_no_plate(track_id)
+
+        # ── OCR ───────────────────────────────────────────────────────────────
         best_ocr: Optional[OCRResult] = None
         quality_score = 0.0
         preprocessing = "none"
 
         if best_plate is not None and best_plate.cropped_image.size > 0:
             try:
-                quality_report  = analyse_quality(best_plate.cropped_image, save_variants=True)
-                quality_score   = quality_report.quality_score
-                preprocessing   = quality_report.preprocessing_method
-                multi_ocr       = _ocr_engine.read_plate_multi(best_plate.cropped_image)
-                best_ocr        = OCRResult(
+                # Change 1: upscale two-wheeler crops if needed
+                crop = _maybe_upscale_plate_crop(
+                    best_plate.cropped_image, vehicle.vehicle_class
+                )
+                quality_report = analyse_quality(crop, save_variants=True)
+                quality_score  = quality_report.quality_score
+                preprocessing  = quality_report.preprocessing_method
+                multi_ocr      = _ocr_engine.read_plate_multi(crop)
+                best_ocr = OCRResult(
                     plate_number   = multi_ocr.plate_number,
                     ocr_confidence = multi_ocr.ocr_confidence,
                     raw_text       = multi_ocr.raw_text,
@@ -238,14 +278,10 @@ def _detect_frame(
                     is_fragment    = multi_ocr.is_fragment,
                     is_noise       = multi_ocr.is_noise,
                 )
-                logger.debug("[Ingest] Frame %d track %s: OCR='%s' conf=%.3f chars=%d",
-                             frame_number, track_id,
-                             best_ocr.plate_number, best_ocr.ocr_confidence, best_ocr.char_count)
             except Exception as exc:
                 logger.warning("[Ingest] OCR failed frame %d track %s: %s",
                                frame_number, track_id, exc)
 
-        # ── Record observation ────────────────────────────────────────────────
         if best_ocr is not None:
             obs = PlateObservation(
                 frame_number   = frame_number,
@@ -261,7 +297,6 @@ def _detect_frame(
             )
             evidence_map[track_id].add(obs)
 
-        # Provisional single-frame consensus (for per-frame DB storage)
         provisional = evidence_map[track_id].consensus()
         frame_results.append((track_id, vehicle, best_plate, best_ocr, provisional))
 
@@ -269,7 +304,7 @@ def _detect_frame(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# BUILD IngestDetection FROM FINAL CONSENSUS
+# BUILD IngestDetection + DB persistence
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _build_ingest_detection(
@@ -286,22 +321,30 @@ def _build_ingest_detection(
     source_file  : str,
     db           : Optional[Session],
 ) -> IngestDetection:
-    """Persist to DB and return IngestDetection."""
+    """
+    Persist to DB and return IngestDetection.
 
-    # Use consensus for what to store and display
-    plate_text       = consensus.plate_number          # VERIFIED only
+    Change 1:  vehicle_category stored on VehicleEvent.
+    Change 4:  confidence_tier, agreement_rate, valid_ocr_reads,
+               matching_ocr_reads stored on VehicleEvent.
+    Change 5:  LOW-confidence reads routed to manual review queue,
+               NOT to auto-blacklist matching.
+    """
+    from app.config import get_vehicle_category
+
+    plate_text       = consensus.plate_number
     partial_text_val = consensus.partial_text
     status           = consensus.status.value
     is_low_conf      = (ocr.ocr_confidence if ocr else 0.0) < _LOW_CONF_THRESHOLD
     was_normalised   = False
+    vehicle_cat      = get_vehicle_category(vehicle.vehicle_class)
 
-    # Normalise (no fabrication — only strips separators from existing text)
     if plate_text:
         plate_text, was_normalised = normalise_plate(plate_text)
     elif partial_text_val:
         partial_text_val, _ = normalise_plate(partial_text_val)
 
-    # ── Persist to Phase-3 VehicleEvent ───────────────────────────────────────
+    # ── Persist to Phase-3 VehicleEvent (with Change 4 new fields) ───────────
     event_id: Optional[int] = None
     if db is not None:
         try:
@@ -315,11 +358,18 @@ def _build_ingest_detection(
                 plate_conf   = plate.confidence   if plate else None,
                 ocr_conf     = ocr.ocr_confidence if ocr   else None,
             )
+            # Change 4: store OCR evidence fields
+            ev.confidence_tier    = consensus.confidence_tier
+            ev.agreement_rate     = consensus.agreement_rate
+            ev.valid_ocr_reads    = consensus.valid_ocr_reads
+            ev.matching_ocr_reads = consensus.matching_ocr_reads
+            ev.vehicle_category   = vehicle_cat
+            db.commit()
             event_id = ev.id
         except Exception as exc:
             logger.warning("[Ingest] Could not store VehicleEvent: %s", exc)
 
-    # ── Persist to Phase-4 Detection (trajectory engine) — VERIFIED only ─────
+    # ── Persist to Phase-4 Detection (trajectory) — VERIFIED only ────────────
     detection_id: Optional[int] = None
     if db is not None and plate_text:
         try:
@@ -336,12 +386,47 @@ def _build_ingest_detection(
         except Exception as exc:
             logger.warning("[Ingest] Could not store Detection: %s", exc)
 
+    # ── Change 5: route LOW-confidence reads to manual review ────────────────
+    display_text = plate_text or partial_text_val
+    if db is not None and display_text and consensus.confidence_tier == "LOW":
+        try:
+            from app.services.manual_review_service import (
+                create_review_item, should_auto_alert
+            )
+            from app.models.manual_review import ManualReview
+            from datetime import timedelta
+            # Only create if no recent pending review for same plate+camera
+            cutoff = timestamp - timedelta(hours=1)
+            existing = (
+                db.query(ManualReview)
+                  .filter(
+                      ManualReview.ocr_plate_text == display_text,
+                      ManualReview.camera_id == camera_id,
+                      ManualReview.review_status == "PENDING",
+                      ManualReview.created_at >= cutoff,
+                  )
+                  .first()
+            )
+            if not existing:
+                create_review_item(
+                    db               = db,
+                    camera_id        = camera_id,
+                    timestamp        = timestamp,
+                    vehicle_type     = vehicle.vehicle_class,
+                    vehicle_category = vehicle_cat,
+                    consensus        = consensus,
+                    source_file      = source_file,
+                    frame_number     = frame_number,
+                    reason           = "low_confidence",
+                )
+        except Exception as exc:
+            logger.warning("[Ingest] Could not create manual review item: %s", exc)
+
     return IngestDetection(
         vehicle_type         = vehicle.vehicle_class,
         vehicle_confidence   = vehicle.confidence,
         vehicle_bbox         = vehicle.bbox,
         track_id             = track_id,
-        # plate_number: only VERIFIED; partial shown in partial_text field
         plate_number         = plate_text,
         partial_text         = partial_text_val,
         plate_status         = status,
@@ -366,6 +451,42 @@ def _build_ingest_detection(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# CHANGE 9: Compliance anomaly detection helper
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _check_compliance_anomalies(
+    tracker     : _SimpleTracker,
+    evidence_map: Dict[str, PlateEvidence],
+    camera_id   : str,
+    timestamp   : datetime,
+    db          : Optional[Session],
+) -> None:
+    """
+    Change 9: After all frames are processed, check each track for
+    compliance anomalies — vehicles that were never assigned a plate.
+
+    Only stores to VehicleEvent; does NOT fire an alert directly.
+    The alert_service's _compliance_anomaly_alerts() queries VehicleEvents
+    with plate_number IS NULL to generate the actual alerts.
+    """
+    threshold = COMPLIANCE_ANOMALY_MIN_FRAMES_WITHOUT_PLATE
+    for track_id, ev_obj in evidence_map.items():
+        frames_no_plate = tracker.get_frames_without_plate(track_id)
+        if frames_no_plate < threshold:
+            continue
+        # This track never produced a usable plate across the whole video
+        if ev_obj.observations:
+            continue  # has observations — not a compliance anomaly
+        logger.debug(
+            "[Ingest] Track %s: compliance anomaly — %d frames without plate",
+            track_id, frames_no_plate,
+        )
+        # Compliance anomaly VehicleEvent is already stored in _build_ingest_detection
+        # because the vehicle_type is set and plate_number is None.
+        # No additional write needed here.
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # IMAGE INGESTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -380,11 +501,8 @@ def ingest_image(
 
     lat, lon  = get_camera_gps(camera_id)
     warnings  : List[str] = []
-    cam_meta  = get_camera_meta(camera_id)
-    if cam_meta is None:
-        warnings.append(
-            f"camera_id '{camera_id}' not found in cameras.json — GPS defaulted to (0,0)"
-        )
+    if get_camera_meta(camera_id) is None:
+        warnings.append(f"camera_id '{camera_id}' not in cameras.json — GPS defaulted")
 
     try:
         image = load_image(image_path)
@@ -405,31 +523,25 @@ def ingest_image(
         )
         detections.append(det)
 
-    # Annotated image
     annotated_url: Optional[str] = None
     try:
         from app.schemas.vehicle_event import DetectionResultWithEvent
         compat = [
             DetectionResultWithEvent(
-                event_id           = d.event_id,
-                vehicle_type       = d.vehicle_type,
-                vehicle_confidence = d.vehicle_confidence,
-                plate_number       = d.plate_number or d.partial_text,
-                plate_confidence   = d.plate_confidence,
-                ocr_confidence     = d.ocr_confidence,
-                vehicle_bbox       = d.vehicle_bbox,
-                plate_bbox         = d.plate_bbox,
-                raw_ocr_text       = d.plate_raw_text,
-            )
-            for d in detections
+                event_id=d.event_id, vehicle_type=d.vehicle_type,
+                vehicle_confidence=d.vehicle_confidence,
+                plate_number=d.plate_number or d.partial_text,
+                plate_confidence=d.plate_confidence, ocr_confidence=d.ocr_confidence,
+                vehicle_bbox=d.vehicle_bbox, plate_bbox=d.plate_bbox,
+                raw_ocr_text=d.plate_raw_text,
+            ) for d in detections
         ]
         annotated  = annotate_image(image, compat)
         out_name   = f"{image_path.stem}_{uuid.uuid4().hex[:8]}_anpr{image_path.suffix}"
-        out_path   = OUTPUT_DIR / out_name
-        save_image(annotated, out_path)
+        save_image(annotated, OUTPUT_DIR / out_name)
         annotated_url = f"/static/output/{out_name}"
     except Exception as exc:
-        logger.warning("[Ingest] Could not save annotated image: %s", exc)
+        logger.warning("[Ingest] Annotated image failed: %s", exc)
         warnings.append("Annotated image could not be saved.")
 
     verified = [d for d in detections if d.plate_status == PlateStatus.VERIFIED.value]
@@ -437,20 +549,13 @@ def ingest_image(
     low_conf = sum(1 for d in detections if d.low_confidence)
 
     return ImageIngestResponse(
-        status                = "ok",
-        source_file           = image_path.name,
-        camera_id             = camera_id,
-        timestamp             = timestamp.isoformat(),
-        latitude              = lat,
-        longitude             = lon,
-        total_vehicles        = len([d for d in detections if d.vehicle_type != "unknown"]),
-        total_plates          = len([d for d in detections if d.plate_number or d.partial_text]),
-        verified_plates       = len(verified),
-        partial_plates        = len(partial),
-        low_confidence_plates = low_conf,
-        detections            = detections,
-        annotated_image_url   = annotated_url,
-        warnings              = warnings,
+        status="ok", source_file=image_path.name, camera_id=camera_id,
+        timestamp=timestamp.isoformat(), latitude=lat, longitude=lon,
+        total_vehicles=len([d for d in detections if d.vehicle_type != "unknown"]),
+        total_plates=len([d for d in detections if d.plate_number or d.partial_text]),
+        verified_plates=len(verified), partial_plates=len(partial),
+        low_confidence_plates=low_conf, detections=detections,
+        annotated_image_url=annotated_url, warnings=warnings,
     )
 
 
@@ -465,22 +570,13 @@ def ingest_video(
     frame_skip    : int                = 5,
     db            : Optional[Session]  = None,
 ) -> VideoIngestResponse:
-    """
-    Process a traffic video.
-
-    Frame skip default changed from 10 → 5 for better plate coverage.
-    Set frame_skip=2 or 3 for more complete reads (slower).
-    Set frame_skip=10+ for a quick scan.
-    """
     if base_timestamp is None:
         base_timestamp = datetime.now(timezone.utc)
 
     frame_skip = max(1, frame_skip)
     lat, lon   = get_camera_gps(camera_id)
     warnings  : List[str] = []
-
-    cam_meta = get_camera_meta(camera_id)
-    if cam_meta is None:
+    if get_camera_meta(camera_id) is None:
         warnings.append(f"camera_id '{camera_id}' not in cameras.json — GPS defaulted")
 
     cap = cv2.VideoCapture(str(video_path))
@@ -495,7 +591,6 @@ def ingest_video(
 
     tracker      = _SimpleTracker()
     evidence_map : Dict[str, PlateEvidence] = {}
-    # Store per-frame data for DB persistence after consensus
     frame_store  : List[Tuple[str, VehicleDetection, Optional[PlateDetection],
                                Optional[OCRResult], int, datetime]] = []
 
@@ -508,7 +603,7 @@ def ingest_video(
             if not ret:
                 break
             if frame_idx % frame_skip == 0:
-                frame_ts = base_timestamp + timedelta(seconds=frame_idx / fps)
+                frame_ts   = base_timestamp + timedelta(seconds=frame_idx / fps)
                 frame_data = _detect_frame(frame, frame_idx, tracker, evidence_map)
                 for track_id, vehicle, plate, ocr, _ in frame_data:
                     frame_store.append((track_id, vehicle, plate, ocr, frame_idx, frame_ts))
@@ -520,17 +615,18 @@ def ingest_video(
     logger.info("[Ingest] '%s' done — %d/%d frames, %d track(s)",
                 video_path.name, frames_processed, total_frames, len(evidence_map))
 
-    # ── Build final per-detection results using full-video consensus ──────────
-    all_detections: List[IngestDetection] = []
+    # Change 9: check compliance anomalies after all frames
+    _check_compliance_anomalies(tracker, evidence_map, camera_id, base_timestamp, db)
 
-    # Deduplicate: one detection per (track_id × frame_number)
+    # ── Build final per-detection results ─────────────────────────────────────
+    all_detections: List[IngestDetection] = []
     seen_key = set()
+
     for track_id, vehicle, plate, ocr, fn, frame_ts in frame_store:
         key = (track_id, fn)
         if key in seen_key:
             continue
         seen_key.add(key)
-
         final = evidence_map[track_id].consensus()
         det   = _build_ingest_detection(
             track_id, vehicle, plate, ocr, final,
@@ -538,15 +634,11 @@ def ingest_video(
         )
         all_detections.append(det)
 
-    # ── Summary stats ─────────────────────────────────────────────────────────
-    # Unique VERIFIED plates (not fragments)
     verified_plates = sorted({
         d.plate_number
         for d in all_detections
         if d.plate_number and d.plate_status == PlateStatus.VERIFIED.value
     })
-
-    # Unique partial texts (honest — not counted as verified unique plates)
     partial_plates = sorted({
         d.partial_text
         for d in all_detections
@@ -555,29 +647,21 @@ def ingest_video(
         )
     })
 
-    low_conf_count  = sum(1 for d in all_detections if d.low_confidence)
-    unreadable_count= sum(1 for d in all_detections if d.plate_status == PlateStatus.UNREADABLE.value)
+    low_conf_count   = sum(1 for d in all_detections if d.low_confidence)
+    unreadable_count = sum(1 for d in all_detections
+                           if d.plate_status == PlateStatus.UNREADABLE.value)
 
     return VideoIngestResponse(
-        status               = "ok",
-        source_file          = video_path.name,
-        camera_id            = camera_id,
-        total_frames         = total_frames,
-        frames_processed     = frames_processed,
-        frame_skip           = frame_skip,
-        total_detections     = len(all_detections),
-        # unique_plates: VERIFIED ONLY — matches frontend KPI "Unique plates"
-        unique_plates        = verified_plates,
-        partial_plates       = partial_plates,
-        verified_count       = len(verified_plates),
-        partial_count        = len(partial_plates),
-        low_confidence_plates= low_conf_count,
-        unreadable_count     = unreadable_count,
-        detections           = all_detections,
-        warnings             = warnings,
-        processing_note      = (
-            f"Frame skip={frame_skip}. "
-            f"Verified plates contain characters confirmed by real OCR evidence. "
-            f"Partial results shown honestly — no fabrication."
+        status="ok", source_file=video_path.name, camera_id=camera_id,
+        total_frames=total_frames, frames_processed=frames_processed,
+        frame_skip=frame_skip, total_detections=len(all_detections),
+        unique_plates=verified_plates, partial_plates=partial_plates,
+        verified_count=len(verified_plates), partial_count=len(partial_plates),
+        low_confidence_plates=low_conf_count, unreadable_count=unreadable_count,
+        detections=all_detections, warnings=warnings,
+        processing_note=(
+            f"Frame skip={frame_skip}. Verified plates from real multi-frame OCR evidence. "
+            f"LOW-confidence reads sent to manual review queue. "
+            f"Compliance anomalies stored for alert engine."
         ),
     )

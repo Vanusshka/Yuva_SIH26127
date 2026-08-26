@@ -199,18 +199,75 @@ def _build_result(
     avg_pconf = sum(o.plate_conf     for o in all_obs) / len(all_obs)
     avg_qual  = sum(o.quality_score  for o in all_obs) / len(all_obs)
 
+    # Change 2+3: compute majority-vote agreement metrics
+    valid_reads    = len(all_obs)
+    consensus_text = best.plate_text
+    matching_reads = sum(1 for o in all_obs if o.plate_text == consensus_text)
+    agreement_rate = round(matching_reads / valid_reads, 4) if valid_reads > 0 else 0.0
+    conf_tier      = compute_confidence_tier(valid_reads, matching_reads, agreement_rate)
+
     return ConsensuResult(
-        track_id           = track_id,
-        plate_number       = best.plate_text if status == PlateStatus.VERIFIED else None,
-        partial_text       = best.plate_text if status != PlateStatus.VERIFIED else None,
-        status             = status,
-        ocr_confidence     = round(best.ocr_confidence, 4),
-        plate_confidence   = round(avg_pconf, 4),
-        quality_score      = round(avg_qual, 4),
-        sightings          = len(all_obs),
-        supporting_frames  = sorted({o.frame_number for o in all_obs}),
-        preprocessing_method = best.preprocessing,
+        track_id            = track_id,
+        plate_number        = best.plate_text if status == PlateStatus.VERIFIED else None,
+        partial_text        = best.plate_text if status != PlateStatus.VERIFIED else None,
+        status              = status,
+        ocr_confidence      = round(best.ocr_confidence, 4),
+        plate_confidence    = round(avg_pconf, 4),
+        quality_score       = round(avg_qual, 4),
+        sightings           = valid_reads,
+        supporting_frames   = sorted({o.frame_number for o in all_obs}),
+        preprocessing_method= best.preprocessing,
+        # Change 2+3
+        valid_ocr_reads     = valid_reads,
+        matching_ocr_reads  = matching_reads,
+        agreement_rate      = agreement_rate,
+        confidence_tier     = conf_tier,
     )
+
+
+# ── Change 2+3: confidence tier computation ───────────────────────────────────
+
+def compute_confidence_tier(
+    valid_reads   : int,
+    matching_reads: int,
+    agreement_rate: float,
+) -> str:
+    """
+    Assign a confidence tier based on multi-frame majority-vote agreement.
+
+    Thresholds are read from config.py so they can be adjusted without
+    touching this logic.
+
+    Parameters
+    ----------
+    valid_reads    : number of OCR reads with enough characters (>= MIN_CHARS_PARTIAL)
+    matching_reads : number of those reads that agree with the consensus plate
+    agreement_rate : matching_reads / valid_reads  (0.0–1.0)
+
+    Returns
+    -------
+    "HIGH"   | "MEDIUM" | "LOW"
+
+    Documented thresholds (see config.py):
+      HIGH   : agreement_rate >= OCR_HIGH_AGREEMENT_THRESH
+               AND valid_reads >= OCR_MIN_READS_FOR_HIGH
+      MEDIUM : agreement_rate >= OCR_MEDIUM_AGREEMENT_THRESH
+      LOW    : everything else
+    """
+    from app.config import (
+        OCR_HIGH_AGREEMENT_THRESH,
+        OCR_MEDIUM_AGREEMENT_THRESH,
+        OCR_MIN_READS_FOR_HIGH,
+    )
+
+    if (
+        valid_reads >= OCR_MIN_READS_FOR_HIGH
+        and agreement_rate >= OCR_HIGH_AGREEMENT_THRESH
+    ):
+        return "HIGH"
+    if agreement_rate >= OCR_MEDIUM_AGREEMENT_THRESH:
+        return "MEDIUM"
+    return "LOW"
 
 
 @dataclass
@@ -227,6 +284,12 @@ class ConsensuResult:
     sightings          : int
     supporting_frames  : List[int]
     preprocessing_method: str
+
+    # Change 2+3: multi-frame agreement metrics
+    valid_ocr_reads    : int   = 0
+    matching_ocr_reads : int   = 0
+    agreement_rate     : float = 0.0
+    confidence_tier    : str   = "LOW"   # HIGH | MEDIUM | LOW
 
     @property
     def display_text(self) -> Optional[str]:
@@ -245,4 +308,9 @@ class ConsensuResult:
             "sightings"           : self.sightings,
             "supporting_frames"   : self.supporting_frames,
             "preprocessing_method": self.preprocessing_method,
+            # Change 2+3
+            "valid_ocr_reads"     : self.valid_ocr_reads,
+            "matching_ocr_reads"  : self.matching_ocr_reads,
+            "agreement_rate"      : self.agreement_rate,
+            "confidence_tier"     : self.confidence_tier,
         }

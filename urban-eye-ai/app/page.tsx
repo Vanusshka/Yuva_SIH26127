@@ -26,7 +26,7 @@ import LoginPage   from '@/src/page-views/LoginPage'
 import { AppLayout } from '@/src/components/layout/AppLayout'
 import {
   Overview, VehicleSearch, CameraNetwork, TrafficAnalytics,
-  CityMap, Alerts, BlacklistMonitoring, SystemHealth,
+  CityMap, Alerts, BlacklistMonitoring, SystemHealth, ManualReviewPage,
 } from '@/src/route-pages/Pages'
 import VideoUpload from '@/src/components/VideoUpload'
 import { isAuthenticated } from '@/src/auth'
@@ -82,6 +82,7 @@ function AppRoutes() {
         <Route path="alerts"            element={<><PageFrame>Alerts</PageFrame><Alerts /></>} />
         <Route path="blacklist"         element={<><PageFrame>Blacklist Monitoring</PageFrame><BlacklistMonitoring /></>} />
         <Route path="system-health"     element={<><PageFrame>System Health</PageFrame><SystemHealth /></>} />
+        <Route path="manual-review"     element={<><PageFrame>Manual Review Queue</PageFrame><ManualReviewPage /></>} />
       </Route>
 
       {/* ── Legacy redirect shims ── */}
@@ -94,6 +95,7 @@ function AppRoutes() {
         ['blacklist',         'blacklist'],
         ['system-health',     'system-health'],
         ['upload-video',      'upload-video'],
+        ['manual-review',     'manual-review'],
       ].map(([from, to]) => (
         <Route
           key={from}

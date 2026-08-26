@@ -371,7 +371,52 @@ export interface CameraProcessingResult {
   formula_note     : string
 }
 
-/** POST /process/video with upload-progress callback */
+export interface ManualReviewItem {
+  id                 : number
+  camera_id          : string
+  timestamp          : string
+  vehicle_type       : string | null
+  vehicle_category   : string | null
+  ocr_plate_text     : string | null
+  ocr_confidence     : number | null
+  confidence_tier    : string
+  agreement_rate     : number | null
+  valid_ocr_reads    : number | null
+  matching_ocr_reads : number | null
+  source_file        : string | null
+  frame_number       : number | null
+  track_id           : string | null
+  reason             : string
+  review_status      : string
+  reviewed_plate     : string | null
+  reviewer_notes     : string | null
+  reviewed_at        : string | null
+  created_at         : string
+}
+
+/** GET /manual-review — pending review items */
+export async function fetchManualReviews(
+  status?: string,
+  limit = 50,
+  offset = 0,
+): Promise<{ total: number; items: ManualReviewItem[] }> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+  if (status) params.set('status', status)
+  return apiFetch(`/manual-review?${params}`)
+}
+
+/** POST /manual-review/{id}/decision */
+export async function submitReviewDecision(
+  reviewId     : number,
+  decision     : 'CONFIRMED' | 'REJECTED' | 'EDITED',
+  reviewedPlate?: string,
+  notes?       : string,
+): Promise<ManualReviewItem> {
+  return apiFetch(`/manual-review/${reviewId}/decision`, {
+    method  : 'POST',
+    body    : JSON.stringify({ decision, reviewed_plate: reviewedPlate, notes }),
+  })
+}
 export async function processVideoForCamera(
   file       : File,
   cameraId   : string,

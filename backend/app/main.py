@@ -1297,3 +1297,182 @@ def list_cameras_p8(db: Session = Depends(get_db)):
 
     logger.info("GET /api/cameras — returned %d cameras", len(result))
     return result
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RELIABILITY UPGRADE — Manual Review API endpoints (Change 6)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+from app.services.manual_review_service import (
+    get_pending_reviews,
+    get_all_reviews,
+    get_review_by_id,
+    submit_decision,
+    REVIEW_PENDING, REVIEW_CONFIRMED, REVIEW_REJECTED, REVIEW_EDITED,
+)
+from app.models.manual_review import ManualReview as ManualReviewModel
+from pydantic import BaseModel as _BaseModel
+from typing import Optional as _Opt
+
+
+class ManualReviewOut(_BaseModel):
+    """API response shape for a ManualReview item."""
+    id                 : int
+    camera_id          : str
+    timestamp          : str
+    vehicle_type       : _Opt[str]
+    vehicle_category   : _Opt[str]
+    ocr_plate_text     : _Opt[str]
+    ocr_confidence     : _Opt[float]
+    confidence_tier    : str
+    agreement_rate     : _Opt[float]
+    valid_ocr_reads    : _Opt[int]
+    matching_ocr_reads : _Opt[int]
+    source_file        : _Opt[str]
+    frame_number       : _Opt[int]
+    track_id           : _Opt[str]
+    reason             : str
+    review_status      : str
+    reviewed_plate     : _Opt[str]
+    reviewer_notes     : _Opt[str]
+    reviewed_at        : _Opt[str]
+    created_at         : str
+
+    @classmethod
+    def from_orm_obj(cls, m: ManualReviewModel) -> "ManualReviewOut":
+        return cls(
+            id=m.id, camera_id=m.camera_id,
+            timestamp=m.timestamp.isoformat() if m.timestamp else "",
+            vehicle_type=m.vehicle_type, vehicle_category=m.vehicle_category,
+            ocr_plate_text=m.ocr_plate_text, ocr_confidence=m.ocr_confidence,
+            confidence_tier=m.confidence_tier, agreement_rate=m.agreement_rate,
+            valid_ocr_reads=m.valid_ocr_reads, matching_ocr_reads=m.matching_ocr_reads,
+            source_file=m.source_file, frame_number=m.frame_number, track_id=m.track_id,
+            reason=m.reason, review_status=m.review_status,
+            reviewed_plate=m.reviewed_plate, reviewer_notes=m.reviewer_notes,
+            reviewed_at=m.reviewed_at.isoformat() if m.reviewed_at else None,
+            created_at=m.created_at.isoformat() if m.created_at else "",
+        )
+
+
+class ReviewDecisionIn(_BaseModel):
+    decision       : str                # CONFIRMED | REJECTED | EDITED
+    reviewed_plate : _Opt[str] = None   # required when decision == EDITED
+    notes          : _Opt[str] = None
+
+
+@app.get(
+    "/manual-review",
+    tags    = ["Manual Review – Reliability"],
+    summary = "List manual review items (pending by default)",
+)
+def list_manual_reviews(
+    status : _Opt[str] = Query(None,  description="Filter: PENDING|CONFIRMED|REJECTED|EDITED"),
+    limit  : int        = Query(50,   ge=1, le=200),
+    offset : int        = Query(0,    ge=0),
+    db     : Session    = Depends(get_db),
+):
+    """
+    Return manual review items for plates that could not be auto-verified.
+
+    LOW-confidence OCR reads are routed here instead of triggering automatic
+    blacklist alerts (Change 5 safety gate).
+
+    Returns honest evidence: ocr_plate_text, confidence_tier, agreement_rate,
+    valid_ocr_reads, matching_ocr_reads.
+    No fabricated data.
+    """
+    items = get_all_reviews(db, status=status, limit=limit, offset=offset)
+    return {
+        "total"  : len(items),
+        "items"  : [ManualReviewOut.from_orm_obj(m) for m in items],
+    }
+
+
+@app.get(
+    "/manual-review/pending",
+    tags    = ["Manual Review – Reliability"],
+    summary = "List only PENDING review items",
+)
+def list_pending_reviews(
+    limit  : int     = Query(50, ge=1, le=200),
+    offset : int     = Query(0,  ge=0),
+    db     : Session = Depends(get_db),
+):
+    items = get_pending_reviews(db, limit=limit, offset=offset)
+    return {
+        "total"  : len(items),
+        "items"  : [ManualReviewOut.from_orm_obj(m) for m in items],
+    }
+
+
+@app.get(
+    "/manual-review/{review_id}",
+    tags    = ["Manual Review – Reliability"],
+    summary = "Get a single review item by ID",
+)
+def get_single_review(review_id: int, db: Session = Depends(get_db)):
+    item = get_review_by_id(db, review_id)
+    if not item:
+        raise HTTPException(status_code=404, detail=f"Review {review_id} not found.")
+    return ManualReviewOut.from_orm_obj(item)
+
+
+@app.post(
+    "/manual-review/{review_id}/decision",
+    tags    = ["Manual Review – Reliability"],
+    summary = "Submit a review decision (CONFIRMED | REJECTED | EDITED)",
+)
+def submit_review_decision(
+    review_id : int,
+    body      : ReviewDecisionIn,
+    db        : Session = Depends(get_db),
+):
+    """
+    Record an operator decision for a review item.
+
+    - CONFIRMED : plate text is correct as-is
+    - REJECTED  : plate could not be verified (do not alert)
+    - EDITED    : operator corrected the plate text (reviewed_plate required)
+
+    Only CONFIRMED or EDITED items become eligible for blacklist matching.
+    REJECTED items are never matched.
+    """
+    try:
+        item = submit_decision(
+            db            = db,
+            review_id     = review_id,
+            decision      = body.decision,
+            reviewed_plate= body.reviewed_plate,
+            notes         = body.notes,
+        )
+        return ManualReviewOut.from_orm_obj(item)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ── Reliability: fuzzy trajectory endpoint ────────────────────────────────────
+
+@app.get(
+    "/api/trajectory/{plate}/fuzzy",
+    tags    = ["Trajectory – Reliability Upgrade"],
+    summary = "Trajectory reconstruction with fuzzy plate matching (Change 7+8)",
+)
+def get_trajectory_fuzzy(plate: str, db: Session = Depends(get_db)):
+    """
+    **Change 7+8: Fuzzy trajectory reconstruction.**
+
+    Uses Levenshtein edit distance <= TRAJECTORY_FUZZY_MAX_EDIT_DISTANCE (default 1)
+    to find near-identical OCR variations (e.g. TS09AB1234 vs TS09A81234).
+
+    **Change 8: Travel-time feasibility validation.**
+    Hops where the observed travel time is physically impossible given the GPS
+    distance are classified as IMPOSSIBLE even if the speed calculation alone
+    would not flag them.
+
+    Fuzzy-matched hops are marked SUSPICIOUS in the response.
+    Fuzzy match alone does NOT confirm a trajectory — it flags candidates
+    for human review.
+    """
+    from app.trajectory.engine import reconstruct_fuzzy
+    return reconstruct_fuzzy(db, plate)
