@@ -6,8 +6,9 @@ __v0_jsx-dev-runtime.ts
 .v0-trash/
 .vercel/
 
-# Environment variables
+# Environment files — .env.local is secret, .env.production is committed for Vercel
 .env*.local
+# DO NOT ignore .env.production — Vercel reads it at build time
 
 # Common ignores
 node_modules
