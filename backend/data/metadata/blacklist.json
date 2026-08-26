@@ -1,0 +1,42 @@
+{
+  "_note": "DEMO / SIMULATED DATA — These are FICTIONAL plate numbers created solely for SIH26127 development and testing. They do NOT represent real vehicles, real law enforcement records, or real blacklisted individuals. Do NOT use this data in any real-world context.",
+  "generated_for": "SIH26127 Phase 7 — Alert Engine Demo",
+  "version": "1.0",
+  "entries": [
+    {
+      "plate_number": "TS08AB1234",
+      "reason": "Demo Blacklisted Vehicle – Stolen (SIMULATED)",
+      "category": "STOLEN",
+      "added_date": "2026-08-01",
+      "priority": "HIGH"
+    },
+    {
+      "plate_number": "DL01ZZ9999",
+      "reason": "Demo Blacklisted Vehicle – Wanted for Questioning (SIMULATED)",
+      "category": "WANTED",
+      "added_date": "2026-08-10",
+      "priority": "CRITICAL"
+    },
+    {
+      "plate_number": "MH12XY5678",
+      "reason": "Demo Blacklisted Vehicle – Outstanding Challan (SIMULATED)",
+      "category": "CHALLAN",
+      "added_date": "2026-08-15",
+      "priority": "MEDIUM"
+    },
+    {
+      "plate_number": "KA03MN4321",
+      "reason": "Demo Blacklisted Vehicle – Insurance Expired (SIMULATED)",
+      "category": "COMPLIANCE",
+      "added_date": "2026-08-20",
+      "priority": "LOW"
+    },
+    {
+      "plate_number": "AP09CD7890",
+      "reason": "Demo Blacklisted Vehicle – Reported Involved in Hit-and-Run (SIMULATED)",
+      "category": "CRIMINAL",
+      "added_date": "2026-08-22",
+      "priority": "CRITICAL"
+    }
+  ]
+}

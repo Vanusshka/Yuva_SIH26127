@@ -1,0 +1,38 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pt
+*.onnx
+
+# ── Model weights ─────────────────────────────────────────────────────────────
+models/*.pt
+models/*.onnx
+
+# ── Legacy data dirs ──────────────────────────────────────────────────────────
+data/input/*
+data/output/*
+!data/input/.gitkeep
+!data/output/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# ── Phase 7 dataset folders (never commit large media files) ─────────────────
+data/raw/traffic_images/*
+data/raw/traffic_videos/*
+data/raw/license_plates/*
+data/processed/*
+!data/raw/traffic_images/.gitkeep
+!data/raw/traffic_videos/.gitkeep
+!data/raw/license_plates/.gitkeep
+!data/processed/.gitkeep
+
+# ── Keep metadata JSON files ──────────────────────────────────────────────────
+!data/metadata/
+!data/metadata/*.json
+!data/metadata/.gitkeep
+
+# ── SQLite database ───────────────────────────────────────────────────────────
+data/*.db
+data/*.db-wal
+data/*.db-shm

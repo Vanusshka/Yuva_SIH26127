@@ -1,0 +1,55 @@
+# Python virtual environments
+backend/venv/
+backend/venv313/
+SIH_ANPR/venv/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+*.egg-info/
+
+# SQLite database
+backend/data/*.db
+backend/data/*.db-wal
+backend/data/*.db-shm
+
+# Model weights (large binary files)
+backend/models/*.pt
+backend/models/*.onnx
+SIH_ANPR/models/
+
+# Large dataset folders
+backend/data/raw/traffic_images/*
+backend/data/raw/traffic_videos/*
+backend/data/raw/license_plates/*
+backend/data/processed/*
+backend/data/input/*
+backend/data/output/*
+!backend/data/raw/traffic_images/.gitkeep
+!backend/data/raw/traffic_videos/.gitkeep
+!backend/data/raw/license_plates/.gitkeep
+!backend/data/processed/.gitkeep
+!backend/data/input/.gitkeep
+!backend/data/output/.gitkeep
+
+# Metadata JSON files — keep these
+!backend/data/metadata/
+!backend/data/metadata/*.json
+
+# Frontend build artefacts
+urban-eye-ai/.next/
+urban-eye-ai/node_modules/
+frontend/.next/
+frontend/node_modules/
+
+# Environment files
+urban-eye-ai/.env.local
+backend/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json

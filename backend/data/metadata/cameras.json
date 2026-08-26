@@ -1,0 +1,171 @@
+{
+  "_note": "DEMO / SIMULATED DATA — These are representative camera positions for SIH26127 development and testing. They do NOT represent real CCTV infrastructure.",
+  "generated_for": "SIH26127 Phase 7 — End-to-End Pipeline Demo",
+  "cameras": [
+    {
+      "camera_id": "CAM_001",
+      "camera_name": "Ameerpet Junction Camera",
+      "latitude": 17.4375,
+      "longitude": 78.4483,
+      "location": "Ameerpet Junction",
+      "road_name": "Ameerpet–Punjagutta Road",
+      "direction": "NORTH_BOUND",
+      "zone": "Central Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_002",
+      "camera_name": "Begumpet Junction Camera",
+      "latitude": 17.4432,
+      "longitude": 78.4556,
+      "location": "Begumpet Junction",
+      "road_name": "Begumpet–Secunderabad Road",
+      "direction": "NORTH_EAST_BOUND",
+      "zone": "Central Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_003",
+      "camera_name": "Hitech City Entry Gate Camera",
+      "latitude": 17.4504,
+      "longitude": 78.3806,
+      "location": "Hitech City Entry Gate",
+      "road_name": "HITEC City Road",
+      "direction": "WEST_BOUND",
+      "zone": "West Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_004",
+      "camera_name": "Charminar Intersection Camera",
+      "latitude": 17.3616,
+      "longitude": 78.4747,
+      "location": "Charminar Intersection",
+      "road_name": "Charminar Road",
+      "direction": "SOUTH_BOUND",
+      "zone": "Old City",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_005",
+      "camera_name": "Secunderabad Railway Station Camera",
+      "latitude": 17.4399,
+      "longitude": 78.4983,
+      "location": "Secunderabad Railway Station",
+      "road_name": "Station Road",
+      "direction": "EAST_BOUND",
+      "zone": "North Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_006",
+      "camera_name": "Madhapur Flyover Camera",
+      "latitude": 17.4489,
+      "longitude": 78.3908,
+      "location": "Madhapur Flyover",
+      "road_name": "Madhapur–Kondapur Road",
+      "direction": "NORTH_WEST_BOUND",
+      "zone": "West Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_007",
+      "camera_name": "Kukatpally Bus Stop Camera",
+      "latitude": 17.4849,
+      "longitude": 78.4138,
+      "location": "Kukatpally Bus Stop",
+      "road_name": "NH-65 Kukatpally",
+      "direction": "NORTH_BOUND",
+      "zone": "North-West Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_008",
+      "camera_name": "LB Nagar Junction Camera",
+      "latitude": 17.3494,
+      "longitude": 78.5520,
+      "location": "LB Nagar Junction",
+      "road_name": "LB Nagar–Nagole Road",
+      "direction": "EAST_BOUND",
+      "zone": "South-East Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_009",
+      "camera_name": "Mehdipatnam Signal Camera",
+      "latitude": 17.3929,
+      "longitude": 78.4370,
+      "location": "Mehdipatnam Signal",
+      "road_name": "Mehdipatnam–Tolichowki Road",
+      "direction": "SOUTH_WEST_BOUND",
+      "zone": "South-West Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_010",
+      "camera_name": "Dilsukhnagar Underpass Camera",
+      "latitude": 17.3688,
+      "longitude": 78.5260,
+      "location": "Dilsukhnagar Underpass",
+      "road_name": "Dilsukhnagar Main Road",
+      "direction": "SOUTH_EAST_BOUND",
+      "zone": "South-East Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_011",
+      "camera_name": "Gachibowli Stadium Gate Camera",
+      "latitude": 17.4239,
+      "longitude": 78.3516,
+      "location": "Gachibowli Stadium Gate",
+      "road_name": "Gachibowli–Financial District Road",
+      "direction": "SOUTH_WEST_BOUND",
+      "zone": "West Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_012",
+      "camera_name": "Tolichowki Toll Plaza Camera",
+      "latitude": 17.3963,
+      "longitude": 78.4125,
+      "location": "Tolichowki Toll Plaza",
+      "road_name": "Outer Ring Road South",
+      "direction": "WEST_BOUND",
+      "zone": "South-West Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_013",
+      "camera_name": "Uppal X Roads Camera",
+      "latitude": 17.4052,
+      "longitude": 78.5592,
+      "location": "Uppal X Roads",
+      "road_name": "Uppal–Nagole Corridor",
+      "direction": "EAST_BOUND",
+      "zone": "East Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_014",
+      "camera_name": "Paradise Circle Camera",
+      "latitude": 17.4480,
+      "longitude": 78.4980,
+      "location": "Paradise Circle",
+      "road_name": "MG Road–Paradise Road",
+      "direction": "NORTH_BOUND",
+      "zone": "North Hyderabad",
+      "status": "ACTIVE"
+    },
+    {
+      "camera_id": "CAM_015",
+      "camera_name": "Kondapur Signal Camera",
+      "latitude": 17.4600,
+      "longitude": 78.3620,
+      "location": "Kondapur Signal",
+      "road_name": "Kondapur–Gachibowli Road",
+      "direction": "SOUTH_BOUND",
+      "zone": "West Hyderabad",
+      "status": "ACTIVE"
+    }
+  ]
+}
