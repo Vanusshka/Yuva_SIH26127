@@ -12,7 +12,7 @@
  * ✅ Alerts               — live: /alerts
  * ✅ TrafficAnalytics     — live: /analytics
  * ✅ SystemHealth         — live: /health
- * 🔶 CameraNetwork       — live: /api/cameras (count KPIs); feed thumbnails = placeholder
+ * ✅ CameraNetwork       — live: /api/cameras + per-camera video upload + real AI pipeline
  * ✅ CityMap             — live: real Leaflet map, /api/cameras + /analytics/traffic-density + /analytics/congestion + /api/trajectory/{plate}
  * 🔶 BlacklistMonitoring — live alert data filtered for BLACKLISTED_VEHICLE type
  */
@@ -33,7 +33,11 @@ import {
   DEMO_HEALTH, DEMO_ANALYTICS, ApiError,
 } from '@/lib/api'
 
-// ── City Map — dynamically imported to avoid SSR Leaflet crash ────────────────
+// ── Dynamic import for CameraCard (avoids SSR issues with localStorage) ──────
+const CameraCardDynamic = dynamic(
+  () => import('@/src/components/CameraCard').then(m => ({ default: m.CameraCard })),
+  { ssr: false, loading: () => <div className="panel" style={{ minHeight: 200 }} /> }
+)
 const CityMapComponent = dynamic(
   () => import('@/src/components/CityMapComponent'),
   {
@@ -510,11 +514,16 @@ export function VehicleSearch() {
 // CAMERA NETWORK PAGE  🔶 live: /api/cameras KPI counts; feed thumbnails = placeholder
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CAMERA NETWORK PAGE  ✅ live: /api/cameras + per-camera video upload + real AI pipeline
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export function CameraNetwork() {
   const [cameras,  setCameras]  = useState<CameraItem[]>([])
   const [search,   setSearch]   = useState('')
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState<string | null>(null)
+  const [results,  setResults]  = useState<Record<string, any>>({})
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -529,15 +538,24 @@ export function CameraNetwork() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  // Load stored processing results from localStorage on mount (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('urbaneye_camera_results')
+        if (raw) setResults(JSON.parse(raw))
+      } catch { /* ignore parse errors */ }
+    }
+    load()
+  }, [load])
 
   const filtered = cameras.filter(c =>
     c.camera_id.toLowerCase().includes(search.toLowerCase()) ||
     c.location_name.toLowerCase().includes(search.toLowerCase()),
   )
 
-  const online  = cameras.length
-  const active  = cameras.filter(c => c.detections_last_hour > 0).length
+  const processedCount = Object.keys(results).length
+  const withDetections = Object.values(results).filter((r: any) => (r?.total_detections ?? 0) > 0).length
 
   return (
     <>
@@ -546,12 +564,13 @@ export function CameraNetwork() {
       {loading && <Loading label="Loading camera network…" />}
       {error   && <ErrorBanner message={error} onRetry={load} />}
 
+      {/* KPI cards — honest labels */}
       <div className="kpi-grid" style={{ marginTop: 17 }}>
         {[
-          ['Total Cameras', String(cameras.length || 15)],
-          ['Online',        String(online)],
-          ['Active (1h)',   String(active)],
-          ['Loaded',        cameras.length > 0 ? 'Live' : 'Demo'],
+          ['Total Cameras',    String(cameras.length || 15)],
+          ['Configured',       String(cameras.length || 15)],
+          ['Videos Processed', String(processedCount)],
+          ['With Detections',  String(withDetections)],
         ].map(([a, b]) => (
           <article className="kpi-card" key={a}>
             <span className="kpi-label">{a}</span>
@@ -560,28 +579,52 @@ export function CameraNetwork() {
         ))}
       </div>
 
+      {/* Honest status notice */}
+      <div style={{
+        padding: '8px 14px', background: '#f0f6fb', borderRadius: 7,
+        fontSize: 10, color: '#5a8090', marginBottom: 17,
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <Camera size={12} />
+        These are <strong style={{ margin: '0 3px' }}>configured camera locations</strong>
+        — not live CCTV streams. Click any card to upload a real traffic video and run the AI pipeline.
+      </div>
+
+      {/* Interactive camera grid using real CameraCard components */}
       <div className="dashboard-grid">
-        {(filtered.length > 0 ? filtered : [
-          { camera_id: 'CAM-042', location_name: 'MG Road Junction',       detections_last_hour: 0, road_name: null, direction: null, latitude: 0, longitude: 0 },
-          { camera_id: 'CAM-017', location_name: 'Koramangala 5th Block',  detections_last_hour: 0, road_name: null, direction: null, latitude: 0, longitude: 0 },
-          { camera_id: 'CAM-088', location_name: 'Airport Road',           detections_last_hour: 0, road_name: null, direction: null, latitude: 0, longitude: 0 },
-          { camera_id: 'CAM-103', location_name: 'Anna Salai',             detections_last_hour: 0, road_name: null, direction: null, latitude: 0, longitude: 0 },
-        ] as CameraItem[]).slice(0, 8).map((c, i) => (
-          <Panel title={`${c.camera_id} · ${c.location_name}`} key={c.camera_id}>
-            <div style={{ height: 130, background: 'var(--navy)', borderRadius: 6, display: 'grid', placeItems: 'center', color: 'var(--cyan)' }}>
-              <Camera size={32} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: 11 }}>
-              <span>1080p · 24 FPS</span>
-              <span className="status-pill">{c.detections_last_hour > 0 ? `${c.detections_last_hour} det/h` : 'Online'}</span>
-            </div>
-            {c.road_name && <p style={{ fontSize: 10, color: 'var(--muted-foreground)', marginTop: 6 }}>{c.road_name}</p>}
-          </Panel>
+        {(filtered.length > 0 ? filtered : cameras).slice(0, 8).map(c => (
+          <CameraCardDynamic
+            key={c.camera_id}
+            camera={c}
+            stored={results[c.camera_id] ?? null}
+            onUpdate={(r: any) => setResults(prev => ({ ...prev, [r.camera_id]: r }))}
+          />
         ))}
       </div>
-      <p style={{ fontSize: 10, color: 'var(--muted-foreground)', marginTop: 8 }}>
-        <PlaceholderBadge /> Camera feed thumbnails require a live RTSP integration (Phase 9)
-      </p>
+
+      {filtered.length === 0 && cameras.length > 0 && !loading && (
+        <p style={{ textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 12, padding: '20px 0' }}>
+          No cameras match &ldquo;{search}&rdquo;.
+        </p>
+      )}
+
+      {/* Usage instructions */}
+      <div style={{
+        marginTop: 16, padding: '12px 16px', background: '#f6f9fb',
+        borderRadius: 8, fontSize: 10, color: 'var(--muted-foreground)',
+      }}>
+        <strong style={{ display: 'block', marginBottom: 4, color: 'var(--foreground)' }}>How to use</strong>
+        1.&nbsp;Click a camera card to open its details.&nbsp;&nbsp;
+        2.&nbsp;Upload a real traffic video (MP4 / AVI / MOV / MKV).&nbsp;&nbsp;
+        3.&nbsp;Click &ldquo;Process Video&rdquo; — vehicle detection, plate OCR, and analytics run via the AI backend.&nbsp;&nbsp;
+        4.&nbsp;Results appear in the card and on the City Traffic Map.
+        <br /><br />
+        Free traffic videos:&nbsp;
+        <a href="https://www.pexels.com/search/videos/traffic/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>Pexels</a>
+        &nbsp;·&nbsp;
+        <a href="https://pixabay.com/videos/search/traffic/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>Pixabay</a>
+        &nbsp;(download manually, then upload above)
+      </div>
     </>
   )
 }

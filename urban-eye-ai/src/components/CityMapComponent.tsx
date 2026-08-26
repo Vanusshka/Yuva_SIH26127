@@ -29,7 +29,7 @@ import {
   fetchCameras, fetchTrafficDensity, fetchCongestion,
   fetchVehicles, fetchTrajectory,
   type CameraItem, type TrafficDensityItem, type CongestionItem,
-  type TrajectoryResponse, ApiError,
+  type TrajectoryResponse, type CameraProcessingResult, ApiError,
 } from '@/lib/api'
 
 // ── Leaflet marker icon fix (default icon path breaks in webpack) ─────────────
@@ -82,6 +82,8 @@ export default function CityMapComponent() {
   const [density,    setDensity]    = useState<TrafficDensityItem[]>([])
   const [congestion, setCongestion] = useState<CongestionItem[]>([])
   const [trajectories, setTrajectories] = useState<TrajectoryResponse[]>([])
+  // Per-camera video processing results from localStorage
+  const [cameraResults, setCameraResults] = useState<Record<string, CameraProcessingResult>>({})
 
   // UI state
   const [layers,    setLayers]    = useState<Set<LayerKey>>(new Set(['cameras']))
@@ -92,6 +94,22 @@ export default function CityMapComponent() {
 
   // Auto-refresh interval ref
   const refreshRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Load camera processing results from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('urbaneye_camera_results')
+      if (raw) setCameraResults(JSON.parse(raw))
+    } catch { /* ignore */ }
+    // Re-check every 15 s in case user processes a video in another tab
+    const t = setInterval(() => {
+      try {
+        const raw = localStorage.getItem('urbaneye_camera_results')
+        if (raw) setCameraResults(JSON.parse(raw))
+      } catch { /* ignore */ }
+    }, 15_000)
+    return () => clearInterval(t)
+  }, [])
 
   // ── Load cameras ────────────────────────────────────────────────────────────
   const loadCameras = useCallback(async () => {
@@ -280,10 +298,14 @@ export default function CityMapComponent() {
             <Marker
               key={cam.camera_id}
               position={[cam.latitude, cam.longitude]}
-              icon={makeDotIcon(cam.detections_last_hour > 0 ? '#24ae76' : DEFAULT_CAM_COLOUR)}
+              icon={makeDotIcon(
+                cameraResults[cam.camera_id]
+                  ? DENSITY_COLOURS[cameraResults[cam.camera_id].density_level] ?? DEFAULT_CAM_COLOUR
+                  : cam.detections_last_hour > 0 ? '#24ae76' : DEFAULT_CAM_COLOUR
+              )}
             >
               <Popup>
-                <div style={{ fontFamily: 'Inter, sans-serif', minWidth: 180 }}>
+                <div style={{ fontFamily: 'Inter, sans-serif', minWidth: 190 }}>
                   <strong style={{ display: 'block', fontSize: 12, marginBottom: 6, color: '#15253a' }}>
                     {cam.camera_id} — {cam.location_name}
                   </strong>
@@ -292,29 +314,70 @@ export default function CityMapComponent() {
                       {cam.road_name}
                     </p>
                   )}
-                  {cam.direction && (
-                    <p style={{ fontSize: 10, color: '#6d7f92', margin: '0 0 6px' }}>
-                      Direction: {cam.direction.replace(/_/g, ' ')}
-                    </p>
-                  )}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 10 }}>
-                    <span style={{ color: '#9aa8b5' }}>Latitude</span>
-                    <span style={{ fontVariantNumeric: 'tabular-nums', color: '#344b60' }}>{cam.latitude.toFixed(4)}</span>
-                    <span style={{ color: '#9aa8b5' }}>Longitude</span>
-                    <span style={{ fontVariantNumeric: 'tabular-nums', color: '#344b60' }}>{cam.longitude.toFixed(4)}</span>
-                    <span style={{ color: '#9aa8b5' }}>Detections/h</span>
-                    <span style={{ color: cam.detections_last_hour > 0 ? '#24ae76' : '#9aa8b5', fontWeight: 700 }}>
-                      {cam.detections_last_hour}
-                    </span>
-                    {densityMap.get(cam.camera_id) && (
+
+                  {/* Show real processing results if available */}
+                  {cameraResults[cam.camera_id] ? (() => {
+                    const r = cameraResults[cam.camera_id]
+                    return (
                       <>
-                        <span style={{ color: '#9aa8b5' }}>Density</span>
-                        <span style={{ fontWeight: 700, color: DENSITY_COLOURS[densityMap.get(cam.camera_id)!.traffic_density] }}>
-                          {densityMap.get(cam.camera_id)!.traffic_density}
-                        </span>
+                        <div style={{ padding: '6px 0', borderTop: '1px solid #edf1f4', marginTop: 4 }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#169266', letterSpacing: '.5px' }}>
+                            ✓ VIDEO PROCESSED
+                          </span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, fontSize: 10, marginTop: 4 }}>
+                          <span style={{ color: '#9aa8b5' }}>Vehicles</span>
+                          <strong>{r.total_detections}</strong>
+                          <span style={{ color: '#9aa8b5' }}>Verified plates</span>
+                          <strong>{r.verified_count}</strong>
+                          <span style={{ color: '#9aa8b5' }}>Density</span>
+                          <strong style={{ color: DENSITY_COLOURS[r.density_level] ?? '#9aa8b5' }}>
+                            {r.density_level.replace('_', ' ')}
+                          </strong>
+                          {r.vehicles_per_minute !== null && (
+                            <>
+                              <span style={{ color: '#9aa8b5' }}>Vehicles/min</span>
+                              <strong>{r.vehicles_per_minute}</strong>
+                            </>
+                          )}
+                        </div>
+                        {r.verified_plates.length > 0 && (
+                          <div style={{ marginTop: 6 }}>
+                            <span style={{ fontSize: 9, color: '#9aa8b5' }}>Plates: </span>
+                            <span style={{ fontSize: 9, color: 'var(--primary)', fontWeight: 700 }}>
+                              {r.verified_plates.slice(0, 3).join(', ')}
+                              {r.verified_plates.length > 3 ? ` +${r.verified_plates.length - 3}` : ''}
+                            </span>
+                          </div>
+                        )}
+                        <p style={{ fontSize: 9, color: '#a0b0c0', margin: '6px 0 0', fontStyle: 'italic' }}>
+                          Source: {r.source_file}
+                        </p>
                       </>
-                    )}
-                  </div>
+                    )
+                  })() : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 10 }}>
+                      <span style={{ color: '#9aa8b5' }}>Latitude</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', color: '#344b60' }}>{cam.latitude.toFixed(4)}</span>
+                      <span style={{ color: '#9aa8b5' }}>Longitude</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', color: '#344b60' }}>{cam.longitude.toFixed(4)}</span>
+                      <span style={{ color: '#9aa8b5' }}>Detections/h</span>
+                      <span style={{ color: cam.detections_last_hour > 0 ? '#24ae76' : '#9aa8b5', fontWeight: 700 }}>
+                        {cam.detections_last_hour}
+                      </span>
+                      {densityMap.get(cam.camera_id) && (
+                        <>
+                          <span style={{ color: '#9aa8b5' }}>Density</span>
+                          <span style={{ fontWeight: 700, color: DENSITY_COLOURS[densityMap.get(cam.camera_id)!.traffic_density] }}>
+                            {densityMap.get(cam.camera_id)!.traffic_density}
+                          </span>
+                        </>
+                      )}
+                      <span style={{ color: '#a0b0c0', fontSize: 9, gridColumn: '1/-1', marginTop: 2 }}>
+                        No video processed yet
+                      </span>
+                    </div>
+                  )}
                 </div>
               </Popup>
             </Marker>

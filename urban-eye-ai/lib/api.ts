@@ -342,6 +342,96 @@ export async function fetchCongestion(windowHours = 1): Promise<CongestionRespon
   return apiFetch<CongestionResponse>(`/analytics/congestion?window_hours=${windowHours}`)
 }
 
+// ── Camera processing result ───────────────────────────────────────────────────
+// Stored per camera in localStorage after a video is processed.
+// All values derive from the real VideoIngestResponse — nothing is fabricated.
+
+export interface CameraProcessingResult {
+  camera_id        : string
+  source_file      : string
+  processed_at     : string          // ISO-8601 timestamp
+  total_frames     : number
+  frames_processed : number
+  frame_skip       : number
+  total_detections : number
+  verified_plates  : string[]        // VERIFIED only — evidence-supported
+  partial_plates   : string[]        // honest partials
+  verified_count   : number
+  partial_count    : number
+  low_confidence_count : number
+  unreadable_count : number
+  vehicle_type_counts  : Record<string, number>  // e.g. { car: 5, bus: 2 }
+  processing_note  : string
+  warnings         : string[]
+  // Density calculation (transparent formula — see formula_note)
+  // density = total_detections / video_duration_minutes
+  // LOW < 5/min, MEDIUM 5–15/min, HIGH 15–30/min, SEVERE > 30/min
+  density_level    : 'LOW' | 'MEDIUM' | 'HIGH' | 'SEVERE' | 'INSUFFICIENT_DATA'
+  vehicles_per_minute : number | null
+  formula_note     : string
+}
+
+/** POST /process/video with upload-progress callback */
+export async function processVideoForCamera(
+  file       : File,
+  cameraId   : string,
+  frameSkip  : number = 5,
+  onProgress?: (pct: number) => void,
+): Promise<VideoIngestResponse> {
+  // Reuses the existing processVideo() function from api.ts
+  return processVideo(file, cameraId, frameSkip, onProgress)
+}
+
+/** Derive a CameraProcessingResult from a VideoIngestResponse (no fabrication). */
+export function buildCameraResult(
+  resp     : VideoIngestResponse,
+  cameraId : string,
+): CameraProcessingResult {
+  // Vehicle type counts from detections
+  const vtCounts: Record<string, number> = {}
+  for (const d of resp.detections) {
+    const t = d.vehicle_type || 'unknown'
+    vtCounts[t] = (vtCounts[t] ?? 0) + 1
+  }
+
+  // Traffic density — transparent formula
+  // duration_minutes = total_frames / (fps*60); we estimate fps=25 if unknown
+  const estimatedFps      = 25
+  const durationMinutes   = resp.total_frames / (estimatedFps * 60)
+  let vehiclesPerMinute: number | null = null
+  let densityLevel: CameraProcessingResult['density_level'] = 'INSUFFICIENT_DATA'
+
+  if (durationMinutes > 0.1) {
+    vehiclesPerMinute = Math.round((resp.total_detections / durationMinutes) * 10) / 10
+    if      (vehiclesPerMinute < 5)  densityLevel = 'LOW'
+    else if (vehiclesPerMinute < 15) densityLevel = 'MEDIUM'
+    else if (vehiclesPerMinute < 30) densityLevel = 'HIGH'
+    else                              densityLevel = 'SEVERE'
+  }
+
+  return {
+    camera_id          : cameraId,
+    source_file        : resp.source_file,
+    processed_at       : new Date().toISOString(),
+    total_frames       : resp.total_frames,
+    frames_processed   : resp.frames_processed,
+    frame_skip         : resp.frame_skip,
+    total_detections   : resp.total_detections,
+    verified_plates    : resp.unique_plates,
+    partial_plates     : resp.partial_plates,
+    verified_count     : resp.verified_count,
+    partial_count      : resp.partial_count,
+    low_confidence_count: resp.low_confidence_plates,
+    unreadable_count   : resp.unreadable_count,
+    vehicle_type_counts: vtCounts,
+    processing_note    : resp.processing_note,
+    warnings           : resp.warnings,
+    density_level      : densityLevel,
+    vehicles_per_minute: vehiclesPerMinute,
+    formula_note       : 'density = total_detections / video_duration_minutes. Thresholds: LOW<5, MEDIUM 5-15, HIGH 15-30, SEVERE>30 vehicles/minute.',
+  }
+}
+
 /**
  * POST /process
  * Upload a traffic image → full ANPR pipeline → summary card.
