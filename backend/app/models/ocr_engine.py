@@ -165,6 +165,24 @@ def _run_ocr(image: np.ndarray, variant_name: str = "unknown") -> OCRResult:
     is_noise   = char_count < MIN_CHARS_NOISE
     is_fragment= MIN_CHARS_NOISE <= char_count < MIN_CHARS_PARTIAL
 
+    # Reject zero/negative confidence immediately
+    if conf <= 0.0:
+        cleaned = ""
+        conf    = 0.0
+        is_noise = True
+
+    # Reject digits-only strings (e.g. "820", "123") — not a valid Indian plate
+    if cleaned and cleaned.isdigit():
+        cleaned  = ""
+        conf     = 0.0
+        is_noise = True
+
+    # Reject strings with no letters — Indian plates always start with 2 state letters
+    if cleaned and not any(c.isalpha() for c in cleaned):
+        cleaned  = ""
+        conf     = 0.0
+        is_noise = True
+
     # If too short, zero out confidence so callers don't treat it as a plate
     if is_noise:
         cleaned = ""
