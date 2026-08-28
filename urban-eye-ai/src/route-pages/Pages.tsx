@@ -1,20 +1,20 @@
-'use client'
+﻿'use client'
 
 /**
- * UrbanEye AI — Route Pages
+ * UrbanEye AI - Route Pages
  * =========================
  * All 8 dashboard pages live here.
  *
  * Integration status per page:
  *
- * ✅ Overview             — live: /health + /analytics
- * ✅ VehicleSearch        — live: /vehicles/{plate} + /api/trajectory/{plate}
- * ✅ Alerts               — live: /alerts
- * ✅ TrafficAnalytics     — live: /analytics
- * ✅ SystemHealth         — live: /health
- * ✅ CameraNetwork       — live: /api/cameras + per-camera video upload + real AI pipeline
- * ✅ CityMap             — live: real Leaflet map, /api/cameras + /analytics/traffic-density + /analytics/congestion + /api/trajectory/{plate}
- * 🔶 BlacklistMonitoring — live alert data filtered for BLACKLISTED_VEHICLE type
+ * âœ… Overview             - live: /health + /analytics
+ * âœ… VehicleSearch        - live: /vehicles/{plate} + /api/trajectory/{plate}
+ * âœ… Alerts               - live: /alerts
+ * âœ… TrafficAnalytics     - live: /analytics
+ * âœ… SystemHealth         - live: /health
+ * âœ… CameraNetwork       - live: /api/cameras + per-camera video upload + real AI pipeline
+ * âœ… CityMap             - live: real Leaflet map, /api/cameras + /analytics/traffic-density + /analytics/congestion + /api/trajectory/{plate}
+ * ðŸ”¶ BlacklistMonitoring - live alert data filtered for BLACKLISTED_VEHICLE type
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -31,10 +31,10 @@ import {
   type HealthResponse, type AnalyticsResponse, type VehicleRecord,
   type TrajectoryResponse, type AlertsResponse, type CameraItem,
   type VehicleListResponse, type ManualReviewItem,
-  DEMO_HEALTH, DEMO_ANALYTICS, ApiError,
+  ApiError,
 } from '@/lib/api'
 
-// ── Dynamic import for CameraCard (avoids SSR issues with localStorage) ──────
+// â”€â”€ Dynamic import for CameraCard (avoids SSR issues with localStorage) â”€â”€â”€â”€â”€â”€
 const CameraCardDynamic = dynamic(
   () => import('@/src/components/CameraCard').then(m => ({ default: m.CameraCard })),
   { ssr: false, loading: () => <div className="panel" style={{ minHeight: 200 }} /> }
@@ -55,14 +55,14 @@ const CityMapComponent = dynamic(
             <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
           </svg>
         </div>
-        Loading interactive map…
+        Loading interactive mapâ€¦
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     ),
   }
 )
 
-// ── shared UI helpers ─────────────────────────────────────────────────────────
+// â”€â”€ shared UI helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const Panel = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <article className="panel">
@@ -90,7 +90,7 @@ const Toolbar = ({ placeholder, value, onChange }: {
 )
 
 /** Loading spinner row */
-function Loading({ label = 'Loading…' }: { label?: string }) {
+function Loading({ label = 'Loadingâ€¦' }: { label?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '28px 0', color: 'var(--muted-foreground)' }}>
       <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
@@ -121,7 +121,7 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => vo
       <AlertCircle size={13} style={{ flexShrink: 0 }} />
       <span style={{ flex: 1 }}>
         {gentle
-          ? 'Backend is offline — showing demo data. Start the backend server to see live results.'
+          ? 'Backend is offline - showing demo data. Start the backend server to see live results.'
           : message}
       </span>
       {onRetry && (
@@ -151,7 +151,7 @@ function PlaceholderBadge() {
   )
 }
 
-/** Vertical bar chart using only CSS/divs — no external charting library */
+/** Vertical bar chart using only CSS/divs - no external charting library */
 const Chart = ({ data, bars = false }: { data?: number[]; bars?: boolean }) => {
   const values = data ?? [45, 68, 52, 82, 60, 94, 72, 88, 64, 78, 51, 86]
   const max = Math.max(...values, 1)
@@ -199,7 +199,7 @@ function Table({ rows }: { rows: string[][] }) {
 
 /** Format ISO timestamp to relative "N min ago" */
 function relativeTime(iso: string | null): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
   if (diff < 1) return 'just now'
   if (diff < 60) return `${diff} min ago`
@@ -207,9 +207,9 @@ function relativeTime(iso: string | null): string {
   return new Date(iso).toLocaleDateString()
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// OVERVIEW PAGE  ✅ live: /health + /analytics
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// OVERVIEW PAGE  âœ… live: /health + /analytics
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function Overview() {
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null)
@@ -227,8 +227,9 @@ export function Overview() {
         ? `Backend error: ${err.detail}`
         : 'Cannot reach backend. Is it running at localhost:8000?'
       setError(msg)
-      // Fall back to demo data so the UI doesn't go blank
-      setAnalytics(DEMO_ANALYTICS)
+      // DO NOT fall back to DEMO_ANALYTICS - show empty state so users
+      // know the data is not real. Analytics remain null until backend responds.
+      setAnalytics(null)
     } finally {
       setLoading(false)
     }
@@ -236,36 +237,42 @@ export function Overview() {
 
   useEffect(() => { load() }, [load])
 
-  const d = analytics ?? DEMO_ANALYTICS
+  const d = analytics
   const isDemo = error !== null
 
-  const kpis = [
+  // When backend is offline, show zeros/empty rather than fake numbers
+  const kpis = d ? [
     ['Vehicles Detected', d.total_vehicles.toLocaleString()],
     ['Active Alerts',     String(d.active_alerts)],
     ['Cameras Online',    `${d.total_cameras} active`],
     ['Avg Speed',         `${d.average_speed_kmh} km/h`],
+  ] : [
+    ['Vehicles Detected', '-'],
+    ['Active Alerts',     '-'],
+    ['Cameras Online',    '-'],
+    ['Avg Speed',         '-'],
   ]
 
-  const trendData = d.traffic_trends.map(t => t.vehicle_count)
+  const trendData = d?.traffic_trends.map(t => t.vehicle_count) ?? []
 
-  const recentVehicles = d.vehicle_distribution.map((item, i) => [
+  const recentVehicles = d ? d.vehicle_distribution.map((item) => [
     item.category.charAt(0).toUpperCase() + item.category.slice(1),
     `${item.percentage.toFixed(1)}%`,
     d.most_active_location ?? 'Various',
     'Today',
-  ])
+  ]) : []
 
   return (
     <>
-      {loading && <Loading label="Fetching live analytics…" />}
+      {loading && <Loading label="Fetching live analyticsâ€¦" />}
       {error && !loading && <ErrorBanner message={error} onRetry={load} />}
       {isDemo && !loading && (
-        <div style={{ marginBottom: 14, fontSize: 11, color: '#5a8090' }}>
-          <PlaceholderBadge /> Demo data — start the backend at&nbsp;
-          <code style={{ background: '#eef3f7', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>
+        <div style={{ marginBottom: 14, fontSize: 11, color: '#5a8090', padding: '8px 12px', background: '#f0f6fb', borderRadius: 6 }}>
+          Backend offline - showing empty state. Start the backend at&nbsp;
+          <code style={{ background: '#dde5ec', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>
             localhost:8000
           </code>
-          &nbsp;to see live stats
+          &nbsp;to see live data.
         </div>
       )}
 
@@ -276,7 +283,7 @@ export function Overview() {
             <strong className="kpi-value">{value}</strong>
             <div className="kpi-trend">
               {label === 'Active Alerts'
-                ? <>{d.critical_count ?? 0} critical</>
+                ? <>{d?.critical_count ?? 0} critical</>
                 : <>Live data</>
               }
             </div>
@@ -290,12 +297,15 @@ export function Overview() {
         </Panel>
         <Panel title="Traffic Summary">
           <div className="kpi-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-            {[
-              ['Congestion',  d.traffic_density_label],
-              ['Avg speed',   `${d.average_speed_kmh} km/h`],
-              ['Cong. score', d.congestion_score.toFixed(2)],
+            {(d ? [
+              ['Congestion',    d.traffic_density_label],
+              ['Avg speed',     `${d.average_speed_kmh} km/h`],
+              ['Cong. score',   d.congestion_score.toFixed(2)],
               ['Unique plates', String(d.total_unique_plates)],
-            ].map(([a, b]) => (
+            ] : [
+              ['Congestion', '-'], ['Avg speed', '-'],
+              ['Cong. score', '-'], ['Unique plates', '-'],
+            ]).map(([a, b]) => (
               <div key={a}><span className="kpi-label">{a}</span><strong>{b}</strong></div>
             ))}
           </div>
@@ -306,7 +316,11 @@ export function Overview() {
         <Panel title="Vehicle Type Distribution">
           {loading
             ? <Loading />
-            : <Table rows={recentVehicles} />
+            : d && d.vehicle_distribution.length > 0
+            ? <Table rows={recentVehicles} />
+            : <p style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '10px 0' }}>
+                No vehicle data available. Process a video to see real distribution.
+              </p>
           }
         </Panel>
         <Panel title={`Active Alerts${isDemo ? '' : ' (live)'}`}>
@@ -320,26 +334,29 @@ export function Overview() {
 /** Compact alert list widget reused in Overview */
 function LiveAlertList({ limit }: { limit: number }) {
   const [data, setData] = useState<AlertsResponse | null>(null)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     fetchAlerts(limit)
-      .then(setData)
-      .catch(() => setData(null))
+      .then(d => { setData(d); setError(false) })
+      .catch(() => { setData(null); setError(true) })
   }, [limit])
 
-  if (!data) {
+  if (error) {
     return (
-      <div className="alert-list">
-        {['Blacklisted vehicle detected', 'Camera offline', 'Unusual traffic density'].map(x => (
-          <div className="alert-row" key={x}>
-            <Siren />
-            <span className="alert-copy">
-              <strong>{x}</strong>
-              <small>Requires your attention</small>
-            </span>
-          </div>
-        ))}
-      </div>
+      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '10px 0' }}>
+        Unable to load alerts - backend offline.
+      </p>
+    )
+  }
+
+  if (!data) return <Loading label="Loading alertsâ€¦" />
+
+  if (data.alerts.length === 0) {
+    return (
+      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '10px 0' }}>
+        No active alerts.
+      </p>
     )
   }
 
@@ -350,7 +367,7 @@ function LiveAlertList({ limit }: { limit: number }) {
           <Siren />
           <span className="alert-copy">
             <strong>{a.alert_type.replace(/_/g, ' ')}</strong>
-            <small>{a.plate_number ?? a.camera_id ?? a.location ?? '—'}</small>
+            <small>{a.plate_number ?? a.camera_id ?? a.location ?? '-'}</small>
           </span>
         </div>
       ))}
@@ -358,9 +375,9 @@ function LiveAlertList({ limit }: { limit: number }) {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// VEHICLE SEARCH PAGE  ✅ live: /vehicles/{plate} + /api/trajectory/{plate}
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// VEHICLE SEARCH PAGE  âœ… live: /vehicles/{plate} + /api/trajectory/{plate}
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function VehicleSearch() {
   const [query,    setQuery]    = useState('')
@@ -371,7 +388,11 @@ export function VehicleSearch() {
   const [error,    setError]    = useState<string | null>(null)
 
   const track = useCallback(async (searchPlate: string) => {
-    const p = (searchPlate || 'TS09AB1234').trim().toUpperCase()
+    const p = searchPlate.trim().toUpperCase()
+    if (!p) {
+      setError('Enter a plate number to search.')
+      return
+    }
     setPlate(p)
     setLoading(true)
     setError(null)
@@ -388,7 +409,7 @@ export function VehicleSearch() {
       else {
         const e = veh.reason as ApiError
         setError(e.status === 404
-          ? `No detections found for plate "${p}". Try: TS09AB1234, MH12XY5678, DL01ZZ9999`
+          ? `No detections found for plate "${p}". Process a video first, then search by the detected plate.`
           : `Vehicle lookup failed: ${e.detail}`)
       }
 
@@ -430,15 +451,16 @@ export function VehicleSearch() {
         </div>
         {error && <ErrorBanner message={error} />}
         <p style={{ fontSize: 10, color: 'var(--muted-foreground)', marginTop: 8 }}>
-          Demo plates: <code>TS09AB1234</code>, <code>MH12XY5678</code>, <code>DL01ZZ9999</code>
+          Search any verified plate number from processed videos.
+          {' '}If you have seeded demo data, try: <code>TS09AB1234</code>
         </p>
       </Panel>
 
-      {loading && <Loading label={`Searching for ${plate}…`} />}
+      {loading && <Loading label={`Searching for ${plate}â€¦`} />}
 
       {vehicle && (
         <section className="dashboard-grid" style={{ marginTop: 17 }}>
-          <Panel title={`Vehicle information · ${vehicle.plate_number}`}>
+          <Panel title={`Vehicle information Â· ${vehicle.plate_number}`}>
             <div className="kpi-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
               {[
                 ['Type',        vehicle.vehicle_type],
@@ -453,7 +475,7 @@ export function VehicleSearch() {
             </div>
             {vehicle.is_blacklisted && (
               <div style={{ marginTop: 10, padding: '8px 12px', background: '#fce9e9', borderRadius: 6, fontSize: 11, color: '#b94040' }}>
-                ⚠ DEMO Blacklisted — {vehicle.blacklist_reason}
+                âš  DEMO Blacklisted - {vehicle.blacklist_reason}
               </div>
             )}
           </Panel>
@@ -461,8 +483,8 @@ export function VehicleSearch() {
           <Panel title="Journey summary">
             {traj ? (
               <>
-                <p>First detected {relativeTime(traj.first_seen)} · {traj.cameras_visited.length} cameras · {traj.total_distance_km.toFixed(2)} km traced</p>
-                <p>Duration: {traj.travel_duration_min.toFixed(0)} min · Avg speed: {traj.average_speed_kmh.toFixed(1)} km/h</p>
+                <p>First detected {relativeTime(traj.first_seen)} Â· {traj.cameras_visited.length} cameras Â· {traj.total_distance_km.toFixed(2)} km traced</p>
+                <p>Duration: {traj.travel_duration_min.toFixed(0)} min Â· Avg speed: {traj.average_speed_kmh.toFixed(1)} km/h</p>
                 <p>Status: <strong style={{ color: traj.overall_status === 'NORMAL' ? 'var(--green)' : 'var(--red)' }}>{traj.overall_status}</strong></p>
                 <p style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{traj.data_mode}</p>
               </>
@@ -486,7 +508,7 @@ export function VehicleSearch() {
                 ))}
               </div>
             </div>
-            <PlaceholderBadge /> Map art is illustrative — GPS coordinates are real
+            <PlaceholderBadge /> Map art is illustrative - GPS coordinates are real
           </Panel>
 
           <Panel title="Detection timeline">
@@ -495,10 +517,10 @@ export function VehicleSearch() {
                 <div className="alert-row" key={i}>
                   <Clock3 />
                   <span className="alert-copy">
-                    <strong>{s.location} · {new Date(s.timestamp).toLocaleTimeString()}</strong>
-                    <small>{s.camera_id}{s.road_name ? ` · ${s.road_name}` : ''}</small>
+                    <strong>{s.location} Â· {new Date(s.timestamp).toLocaleTimeString()}</strong>
+                    <small>{s.camera_id}{s.road_name ? ` Â· ${s.road_name}` : ''}</small>
                     {traj.hops[i] && (
-                      <em>{traj.hops[i].distance_km.toFixed(2)} km · {traj.hops[i].speed_kmh.toFixed(1)} km/h · {traj.hops[i].anomaly}</em>
+                      <em>{traj.hops[i].distance_km.toFixed(2)} km Â· {traj.hops[i].speed_kmh.toFixed(1)} km/h Â· {traj.hops[i].anomaly}</em>
                     )}
                   </span>
                 </div>
@@ -511,13 +533,13 @@ export function VehicleSearch() {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CAMERA NETWORK PAGE  🔶 live: /api/cameras KPI counts; feed thumbnails = placeholder
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// CAMERA NETWORK PAGE  ðŸ”¶ live: /api/cameras KPI counts; feed thumbnails = placeholder
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CAMERA NETWORK PAGE  ✅ live: /api/cameras + per-camera video upload + real AI pipeline
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// CAMERA NETWORK PAGE  âœ… live: /api/cameras + per-camera video upload + real AI pipeline
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function CameraNetwork() {
   const [cameras,  setCameras]  = useState<CameraItem[]>([])
@@ -562,14 +584,14 @@ export function CameraNetwork() {
     <>
       <Toolbar placeholder="Search cameras by ID or location" value={search} onChange={setSearch} />
 
-      {loading && <Loading label="Loading camera network…" />}
+      {loading && <Loading label="Loading camera networkâ€¦" />}
       {error   && <ErrorBanner message={error} onRetry={load} />}
 
-      {/* KPI cards — honest labels */}
+      {/* KPI cards - honest labels */}
       <div className="kpi-grid" style={{ marginTop: 17 }}>
         {[
-          ['Total Cameras',    String(cameras.length || 15)],
-          ['Configured',       String(cameras.length || 15)],
+          ['Total Cameras',    String(cameras.length)],
+          ['Configured',       String(cameras.length)],
           ['Videos Processed', String(processedCount)],
           ['With Detections',  String(withDetections)],
         ].map(([a, b]) => (
@@ -588,7 +610,7 @@ export function CameraNetwork() {
       }}>
         <Camera size={12} />
         These are <strong style={{ margin: '0 3px' }}>configured camera locations</strong>
-        — not live CCTV streams. Click any card to upload a real traffic video and run the AI pipeline.
+        - not live CCTV streams. Click any card to upload a real traffic video and run the AI pipeline.
       </div>
 
       {/* Interactive camera grid using real CameraCard components */}
@@ -617,12 +639,12 @@ export function CameraNetwork() {
         <strong style={{ display: 'block', marginBottom: 4, color: 'var(--foreground)' }}>How to use</strong>
         1.&nbsp;Click a camera card to open its details.&nbsp;&nbsp;
         2.&nbsp;Upload a real traffic video (MP4 / AVI / MOV / MKV).&nbsp;&nbsp;
-        3.&nbsp;Click &ldquo;Process Video&rdquo; — vehicle detection, plate OCR, and analytics run via the AI backend.&nbsp;&nbsp;
+        3.&nbsp;Click &ldquo;Process Video&rdquo; - vehicle detection, plate OCR, and analytics run via the AI backend.&nbsp;&nbsp;
         4.&nbsp;Results appear in the card and on the City Traffic Map.
         <br /><br />
         Free traffic videos:&nbsp;
         <a href="https://www.pexels.com/search/videos/traffic/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>Pexels</a>
-        &nbsp;·&nbsp;
+        &nbsp;Â·&nbsp;
         <a href="https://pixabay.com/videos/search/traffic/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>Pixabay</a>
         &nbsp;(download manually, then upload above)
       </div>
@@ -630,9 +652,9 @@ export function CameraNetwork() {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TRAFFIC ANALYTICS PAGE  ✅ live: /analytics
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// TRAFFIC ANALYTICS PAGE  âœ… live: /analytics
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function TrafficAnalytics() {
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null)
@@ -647,7 +669,7 @@ export function TrafficAnalytics() {
       setError(null)
     } catch (err) {
       setError(`Analytics unavailable: ${(err as ApiError).detail ?? 'network error'}`)
-      setAnalytics(DEMO_ANALYTICS)
+      setAnalytics(null)   // show empty state, not fake data
     } finally {
       setLoading(false)
     }
@@ -655,21 +677,21 @@ export function TrafficAnalytics() {
 
   useEffect(() => { load() }, [load])
 
-  const d = analytics ?? DEMO_ANALYTICS
-  const trendData = d.traffic_trends.map(t => t.vehicle_count)
-  const typeData  = d.vehicle_distribution.map(v => v.count)
+  const d = analytics
+  const trendData = d?.traffic_trends.map(t => t.vehicle_count) ?? []
+  const typeData  = d?.vehicle_distribution.map(v => v.count) ?? []
 
   return (
     <>
-      {loading && <Loading label="Loading analytics…" />}
+      {loading && <Loading label="Loading analyticsâ€¦" />}
       {error   && <ErrorBanner message={error} onRetry={load} />}
 
       <div className="kpi-grid">
         {[
-          ['Average speed',     `${d.average_speed_kmh} km/h`],
-          ['Traffic density',   d.traffic_density_label],
-          ['Congestion score',  d.congestion_score.toFixed(2)],
-          ['Unique plates',     String(d.total_unique_plates)],
+          ['Average speed',     d ? `${d.average_speed_kmh} km/h` : '-'],
+          ['Traffic density',   d?.traffic_density_label ?? '-'],
+          ['Congestion score',  d ? d.congestion_score.toFixed(2) : '-'],
+          ['Unique plates',     d ? String(d.total_unique_plates) : '-'],
         ].map(([a, b]) => (
           <article className="kpi-card" key={a}>
             <span className="kpi-label">{a}</span>
@@ -685,7 +707,7 @@ export function TrafficAnalytics() {
         <Panel title="Vehicle type distribution">
           <Chart data={typeData} bars />
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: '6px 0', fontSize: 10 }}>
-            {d.vehicle_distribution.map(v => (
+            {(d?.vehicle_distribution ?? []).map(v => (
               <span key={v.category} style={{ color: 'var(--muted-foreground)' }}>
                 {v.category}: <strong>{v.percentage.toFixed(1)}%</strong>
               </span>
@@ -696,7 +718,7 @@ export function TrafficAnalytics() {
 
       <section className="dashboard-grid">
         <Panel title="Congestion zones">
-          {d.congestion_zones.length > 0 ? (
+          {d && d.congestion_zones.length > 0 ? (
             <Table rows={d.congestion_zones.map(z => [
               z.location, z.congestion_level, z.camera_id,
               `${z.vehicle_count} veh/h`,
@@ -715,9 +737,9 @@ export function TrafficAnalytics() {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CITY MAP PAGE  ✅ live: real Leaflet map connected to backend data
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// CITY MAP PAGE  âœ… live: real Leaflet map connected to backend data
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function CityMap() {
   return (
@@ -727,9 +749,9 @@ export function CityMap() {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ALERTS PAGE  ✅ live: /alerts
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ALERTS PAGE  âœ… live: /alerts
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function Alerts() {
   const [data,    setData]    = useState<AlertsResponse | null>(null)
@@ -760,14 +782,14 @@ export function Alerts() {
 
   const kpis: [string, number | string][] = data
     ? [['All alerts', data.total_alerts], ['Critical', data.critical_count], ['Warnings', data.warning_count], ['Resolved today', 0]]
-    : [['All alerts', '—'], ['Critical', '—'], ['Warnings', '—'], ['Resolved today', '—']]
+    : [['All alerts', '-'], ['Critical', '-'], ['Warnings', '-'], ['Resolved today', '-']]
 
   const severityColor = (s: string) =>
     s === 'CRITICAL' ? '#b94040' : s === 'WARNING' ? '#d08c16' : '#188eaf'
 
   return (
     <>
-      {loading && <Loading label="Loading alerts…" />}
+      {loading && <Loading label="Loading alertsâ€¦" />}
       {error   && <ErrorBanner message={error} onRetry={load} />}
 
       <div className="kpi-grid">
@@ -820,8 +842,8 @@ export function Alerts() {
                             </span>
                           </td>
                           <td><span className={`status-pill ${a.severity === 'CRITICAL' ? 'red' : a.severity === 'WARNING' ? 'amber' : 'cyan'}`}>{a.severity}</span></td>
-                          <td>{a.plate_number || '—'}</td>
-                          <td>{a.location ?? a.camera_id ?? '—'}</td>
+                          <td>{a.plate_number || '-'}</td>
+                          <td>{a.location ?? a.camera_id ?? '-'}</td>
                           <td>{relativeTime(a.timestamp)}</td>
                         </tr>
                       ))}
@@ -839,9 +861,9 @@ export function Alerts() {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// BLACKLIST MONITORING PAGE  ✅ live: /alerts filtered for BLACKLISTED_VEHICLE
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// BLACKLIST MONITORING PAGE  âœ… live: /alerts filtered for BLACKLISTED_VEHICLE
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function BlacklistMonitoring() {
   const [search,  setSearch]  = useState('')
@@ -867,7 +889,7 @@ export function BlacklistMonitoring() {
   return (
     <>
       <Toolbar placeholder="Search blacklisted vehicle registration" value={search} onChange={setSearch} />
-      {loading && <Loading label="Loading blacklist data…" />}
+      {loading && <Loading label="Loading blacklist dataâ€¦" />}
       {error   && <ErrorBanner message={error} />}
 
       <Panel title="Watchlist vehicles (DEMO DATA)">
@@ -878,9 +900,9 @@ export function BlacklistMonitoring() {
         )}
         {filtered.length > 0 ? (
           <Table rows={filtered.map(a => [
-            a.plate_number ?? '—',
+            a.plate_number ?? '-',
             a.severity,
-            a.location ?? a.camera_id ?? '—',
+            a.location ?? a.camera_id ?? '-',
             relativeTime(a.timestamp),
           ])} />
         ) : !loading ? (
@@ -895,9 +917,9 @@ export function BlacklistMonitoring() {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SYSTEM HEALTH PAGE  ✅ live: /health
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// SYSTEM HEALTH PAGE  âœ… live: /health
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function SystemHealth() {
   const [health,  setHealth]  = useState<HealthResponse | null>(null)
@@ -912,7 +934,7 @@ export function SystemHealth() {
       setError(null)
     } catch (err) {
       setError(`Backend unreachable: ${(err as ApiError).detail ?? 'network error'}`)
-      setHealth(DEMO_HEALTH)
+      setHealth(null)   // do not substitute fake health data
     } finally {
       setLoading(false)
     }
@@ -920,27 +942,33 @@ export function SystemHealth() {
 
   useEffect(() => { load() }, [load])
 
-  const h = health ?? DEMO_HEALTH
-  const isRunning = h.status === 'running'
+  const h = health
+  const isRunning = h?.status === 'running'
 
-  const services = [
-    ['Backend API',        isRunning,                h.status],
-    ['Database',          h.database === 'connected', h.database],
-    ['ANPR Engine',       isRunning,                 'Phase 2–8'],
-    ['OCR Engine',        isRunning,                 'EasyOCR'],
-    ['Trajectory Engine', isRunning,                 'Phase 4'],
-    ['Camera Network',    isRunning,                 `${h.total_cameras} registered`],
-  ] as [string, boolean, string][]
+  const services = h ? [
+    ['Backend API',        isRunning,                  h.status],
+    ['Database',          h.database === 'connected',  h.database],
+    ['ANPR Engine',       isRunning,                   'Phase 2â€“8'],
+    ['OCR Engine',        isRunning,                   'EasyOCR'],
+    ['Trajectory Engine', isRunning,                   'Phase 4'],
+    ['Camera Network',    isRunning,                   `${h.total_cameras} registered`],
+  ] as [string, boolean, string][] : []
 
   return (
     <>
-      {loading && <Loading label="Checking system health…" />}
+      {loading && <Loading label="Checking system healthâ€¦" />}
       {error   && <ErrorBanner message={error} onRetry={load} />}
 
-      <div style={{ marginBottom: 12, fontSize: 11 }}>
-        API version: <strong>{h.version}</strong> · {h.api_phase}
-      </div>
+      {h && (
+        <div style={{ marginBottom: 12, fontSize: 11 }}>
+          API version: <strong>{h.version}</strong> Â· {h.api_phase}
+        </div>
+      )}
+      {!h && !loading && !error && (
+        <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Backend is offline.</p>
+      )}
 
+      {h && (<>
       <div className="kpi-grid">
         {services.map(([name, ok, detail]) => (
           <article className="kpi-card" key={name}>
@@ -969,14 +997,15 @@ export function SystemHealth() {
           ))}
         </div>
       </Panel>
+      </>)}
     </>
   )
 }
 
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MANUAL REVIEW PAGE  ✅ live: /manual-review  (Change 6 — Reliability Upgrade)
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// MANUAL REVIEW PAGE  âœ… live: /manual-review  (Change 6 - Reliability Upgrade)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function ManualReviewPage() {
   const [items,    setItems]    = useState<ManualReviewItem[]>([])
@@ -1038,7 +1067,7 @@ export function ManualReviewPage() {
   return (
     <>
       <div style={{ marginBottom: 14, padding: '8px 14px', background: '#fff8ee', borderRadius: 7, fontSize: 10, color: '#c28118', border: '1px solid #f8d38b' }}>
-        <strong>Change 5 — Blacklist Safety Gate:</strong> LOW-confidence plate reads never auto-trigger blacklist alerts.
+        <strong>Change 5 - Blacklist Safety Gate:</strong> LOW-confidence plate reads never auto-trigger blacklist alerts.
         They appear here for human verification before any action is taken.
         Only CONFIRMED or EDITED items become eligible for blacklist matching.
       </div>
@@ -1062,7 +1091,7 @@ export function ManualReviewPage() {
         </div>
       </div>
 
-      {loading && <Loading label="Loading review queue…" />}
+      {loading && <Loading label="Loading review queueâ€¦" />}
       {error   && <ErrorBanner message={error} onRetry={load} />}
 
       {!loading && items.length === 0 && (
@@ -1096,10 +1125,10 @@ export function ManualReviewPage() {
                       </span>
                     </div>
                     <div style={{ fontSize: 10, color: 'var(--muted-foreground)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      <span>📷 {item.camera_id}</span>
-                      <span>🚗 {item.vehicle_type ?? '—'} ({item.vehicle_category ?? '—'})</span>
-                      <span>🕐 {new Date(item.timestamp).toLocaleString()}</span>
-                      <span>📁 {item.source_file ?? '—'}</span>
+                      <span>ðŸ“· {item.camera_id}</span>
+                      <span>ðŸš— {item.vehicle_type ?? '-'} ({item.vehicle_category ?? '-'})</span>
+                      <span>ðŸ• {new Date(item.timestamp).toLocaleString()}</span>
+                      <span>ðŸ“ {item.source_file ?? '-'}</span>
                       {item.frame_number !== null && <span>Frame #{item.frame_number}</span>}
                     </div>
                   </div>
@@ -1111,14 +1140,14 @@ export function ManualReviewPage() {
                         disabled={submitting === item.id}
                         onClick={() => decide(item.id, 'CONFIRMED')}
                       >
-                        {submitting === item.id ? <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> : '✓'} Confirm
+                        {submitting === item.id ? <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> : 'âœ“'} Confirm
                       </button>
                       <button
                         className="date-button"
                         style={{ fontSize: 10, padding: '5px 10px' }}
                         onClick={() => { setEditId(item.id); setEditPlate(item.ocr_plate_text ?? '') }}
                       >
-                        ✏ Edit
+                        âœ Edit
                       </button>
                       <button
                         className="date-button"
@@ -1126,7 +1155,7 @@ export function ManualReviewPage() {
                         disabled={submitting === item.id}
                         onClick={() => decide(item.id, 'REJECTED')}
                       >
-                        ✗ Reject
+                        âœ— Reject
                       </button>
                     </div>
                   )}
@@ -1135,10 +1164,10 @@ export function ManualReviewPage() {
                 {/* Evidence row */}
                 <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, fontSize: 10 }}>
                   {[
-                    ['Agreement rate', item.agreement_rate !== null ? `${((item.agreement_rate ?? 0) * 100).toFixed(0)}%` : '—'],
-                    ['Valid OCR reads', String(item.valid_ocr_reads ?? '—')],
-                    ['Matching reads',  String(item.matching_ocr_reads ?? '—')],
-                    ['OCR confidence',  item.ocr_confidence !== null ? `${((item.ocr_confidence ?? 0) * 100).toFixed(1)}%` : '—'],
+                    ['Agreement rate', item.agreement_rate !== null ? `${((item.agreement_rate ?? 0) * 100).toFixed(0)}%` : '-'],
+                    ['Valid OCR reads', String(item.valid_ocr_reads ?? '-')],
+                    ['Matching reads',  String(item.matching_ocr_reads ?? '-')],
+                    ['OCR confidence',  item.ocr_confidence !== null ? `${((item.ocr_confidence ?? 0) * 100).toFixed(1)}%` : '-'],
                   ].map(([k, v]) => (
                     <div key={k} style={{ padding: '6px 10px', background: '#f6f9fb', borderRadius: 6 }}>
                       <span style={{ display: 'block', color: 'var(--muted-foreground)', marginBottom: 2 }}>{k}</span>
@@ -1148,7 +1177,7 @@ export function ManualReviewPage() {
                 </div>
 
                 <p style={{ fontSize: 9, color: '#9aa8b5', marginTop: 6 }}>
-                  Reason: {item.reason} · Track: {item.track_id ?? '—'} · Created: {new Date(item.created_at).toLocaleString()}
+                  Reason: {item.reason} Â· Track: {item.track_id ?? '-'} Â· Created: {new Date(item.created_at).toLocaleString()}
                 </p>
 
                 {/* Inline edit panel */}
@@ -1176,7 +1205,7 @@ export function ManualReviewPage() {
                 {/* Confirmed / edited outcome */}
                 {item.review_status !== 'PENDING' && item.reviewed_plate && (
                   <div style={{ marginTop: 8, fontSize: 10, color: '#169266' }}>
-                    ✓ Verified plate: <strong>{item.reviewed_plate}</strong>
+                    âœ“ Verified plate: <strong>{item.reviewed_plate}</strong>
                     {item.reviewer_notes && <span style={{ color: 'var(--muted-foreground)', marginLeft: 8 }}>{item.reviewer_notes}</span>}
                   </div>
                 )}
@@ -1187,7 +1216,7 @@ export function ManualReviewPage() {
       </div>
 
       <p style={{ fontSize: 9, color: 'var(--muted-foreground)', marginTop: 14 }}>
-        Total: {total} items · Showing {items.length} · Only CONFIRMED/EDITED items are eligible for blacklist matching.
+        Total: {total} items Â· Showing {items.length} Â· Only CONFIRMED/EDITED items are eligible for blacklist matching.
       </p>
     </>
   )

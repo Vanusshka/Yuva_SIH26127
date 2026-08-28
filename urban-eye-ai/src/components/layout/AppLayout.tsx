@@ -13,15 +13,18 @@ function ApiStatus() {
   const [version, setVersion] = useState('')
 
   useEffect(() => {
-    fetchHealth()
-      .then(h => { setStatus('connected'); setVersion(h.version) })
-      .catch(() => setStatus('disconnected'))
-    // Re-check every 30 s
-    const t = setInterval(() => {
+    let failCount = 0
+    const check = () => {
       fetchHealth()
-        .then(h => { setStatus('connected'); setVersion(h.version) })
-        .catch(() => setStatus('disconnected'))
-    }, 30_000)
+        .then(h => { setStatus('connected'); setVersion(h.version); failCount = 0 })
+        .catch(() => {
+          failCount++
+          // Only show disconnected after 2 consecutive failures (avoids flicker on single timeout)
+          if (failCount >= 2) setStatus('disconnected')
+        })
+    }
+    check()
+    const t = setInterval(check, 30_000)
     return () => clearInterval(t)
   }, [])
 

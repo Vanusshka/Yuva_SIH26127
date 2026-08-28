@@ -35,11 +35,15 @@ import { isAuthenticated } from '@/src/auth'
 // Page frame wrapper
 // ─────────────────────────────────────────────────────────────────────────────
 function PageFrame({ children }: { children: React.ReactNode }) {
+  const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   return (
     <div className="page-heading">
-      <div><h1>{children}</h1></div>
+      <div><h1>{typeof children === 'string' && children === 'Good morning, Admin'
+        ? `${greeting}, Admin` : children}</h1></div>
       <div className="heading-actions">
-        <button className="date-button">Aug 24, 2026</button>
+        <button className="date-button">{today}</button>
         <button className="primary-button">Generate Report</button>
       </div>
     </div>
