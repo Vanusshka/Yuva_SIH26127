@@ -201,14 +201,25 @@ def _congestion_alerts(db: Session) -> List[CombinedAlertItem]:
 
 
 # --------------------------------------------------------------------------- #
-#  Trajectory anomaly alerts                                                   #
+#  Trajectory anomaly alerts  (cached — max once per 5 minutes)               #
 # --------------------------------------------------------------------------- #
+
+_traj_cache: dict = {"ts": None, "result": []}
+_TRAJ_CACHE_TTL = 300  # seconds
 
 def _trajectory_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
     """
     Only check plates seen at >= 2 distinct cameras in the last 24 h.
-    Caps at 20 candidates to prevent timeouts.
+    Caps at 5 candidates.
+    Cached for 5 minutes — prevents repeated reconstruct() calls when the
+    frontend polls /alerts and /analytics after a video upload.
     """
+    import time
+    global _traj_cache
+    now_ts = time.monotonic()
+    if _traj_cache["ts"] is not None and (now_ts - _traj_cache["ts"]) < _TRAJ_CACHE_TTL:
+        return list(_traj_cache["result"])
+
     alerts: List[CombinedAlertItem] = []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
 
@@ -220,7 +231,7 @@ def _trajectory_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
           .all()
     )
 
-    for (plate,) in multi_cam_plates[:20]:
+    for (plate,) in multi_cam_plates[:5]:
         try:
             traj = reconstruct(db, plate)
         except Exception:
@@ -258,6 +269,9 @@ def _trajectory_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
                 timestamp=ts, demo_data=False,
                 metadata=traj.statistics.model_dump(),
             ))
+
+    _traj_cache["ts"]     = now_ts
+    _traj_cache["result"] = list(alerts)
     return alerts
 
 

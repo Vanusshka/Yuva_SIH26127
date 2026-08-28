@@ -220,16 +220,10 @@ def get_vehicle_list(
         confidences = [vc for _, vc in ev_list if vc is not None]
         confidence  = round(max(confidences), 4) if confidences else 0.0
 
-        # Trajectory status
+        # Trajectory status — SKIP in list view (too expensive for large datasets).
+        # Status is computed on-demand in get_vehicle_detail() only.
         movement_status: Optional[MovementStatus] = None
-        if total_sight >= 2:
-            try:
-                traj = reconstruct(db, plate)
-                movement_status = traj.status
-            except Exception:
-                pass
-
-        status_str = _derive_vehicle_status(movement_status)
+        status_str = "active"  # default for list view
 
         # Blacklist
         bl_entry    = is_blacklisted(plate)
@@ -486,9 +480,10 @@ def get_unified_analytics(
                 most_active_loc = c.location_name
                 break
 
-    # Active alerts count
+    # Active alerts count — use a small limit to avoid triggering heavy
+    # trajectory reconstruction for all plates (that's done lazily per-request)
     try:
-        alerts_resp  = get_combined_alerts(db, limit=200)
+        alerts_resp  = get_combined_alerts(db, limit=10)
         active_alerts = alerts_resp.total_alerts
     except Exception:
         active_alerts = 0
