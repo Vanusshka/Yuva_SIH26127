@@ -1,17 +1,23 @@
 ﻿"""
-Phase 7 Combined Alert Service â€” with Changes 5, 9, 10
+Phase 7 Combined Alert Service
 
-Changes in this version:
-  Change 5: Blacklist safety gate â€” LOW confidence plates do NOT auto-alert.
-            They are sent to the manual review queue instead.
-  Change 9: COMPLIANCE_ANOMALY alert generator added.
-  Change 10: All alert types surfaced to the GET /alerts endpoint.
+Only meaningful, actionable alerts are generated:
+  - BLACKLISTED_VEHICLE  : plate matches demo blacklist (medium/high confidence)
+  - CONGESTION           : high/severe traffic density at a camera
+  - IMPOSSIBLE_TRAJECTORY: physically impossible multi-camera speed
+  - SUSPICIOUS_TRAJECTORY: suspicious multi-camera movement
+  - FREQUENT_SIGHTINGS   : same plate seen >= 10 times in one hour
+  - COMPLIANCE_ANOMALY   : plate region detected but unreadable (max 5, one per camera)
+
+Suppressed (noise):
+  - LOW_CONFIDENCE_ANPR  : already routed to manual review queue
+  - Compliance alerts with no plate region (too common, low signal)
+  - Duplicate compliance alerts for the same camera
 """
 
 from __future__ import annotations
 
 import logging
-from collections import Counter
 from datetime import datetime, timezone, timedelta
 from typing import List
 
@@ -24,11 +30,10 @@ from app.schemas.p7_alerts import CombinedAlertItem, CombinedAlertsResponse
 from app.services.analytics_service import get_traffic_density
 from app.trajectory.engine import reconstruct
 from app.trajectory.anomaly import MovementStatus
-from app.utils.metadata_loader import is_blacklisted, load_blacklist
+from app.utils.metadata_loader import is_blacklisted
 
 logger = logging.getLogger(__name__)
 
-# Thresholds
 _LOW_CONF_THRESHOLD       = 0.50
 _FREQUENT_SIGHTINGS_LIMIT = 10
 
@@ -37,14 +42,14 @@ def _severity_rank(sev: str) -> int:
     return {"CRITICAL": 3, "WARNING": 2, "INFO": 1}.get(sev, 0)
 
 
-# â”€â”€ Change 5: Blacklist alerts with confidence gate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --------------------------------------------------------------------------- #
+#  Blacklist alerts (confidence-gated)                                         #
+# --------------------------------------------------------------------------- #
 
 def _blacklist_alerts(db: Session) -> List[CombinedAlertItem]:
     """
-    Check every distinct plate seen in the last 24 hours against the demo blacklist.
-
-    Change 5: LOW-confidence reads are SKIPPED here (they go to manual review).
-    Only MEDIUM or HIGH confidence plates trigger a blacklist alert.
+    Check every distinct plate seen in the last 24 hours against the blacklist.
+    LOW-confidence reads are skipped (routed to manual review instead).
     """
     from app.services.manual_review_service import should_auto_alert, create_review_item
     from app.models.plate_result import ConsensuResult, PlateStatus
@@ -84,16 +89,13 @@ def _blacklist_alerts(db: Session) -> List[CombinedAlertItem]:
         if not entry:
             continue
 
-        # Change 5 safety gate: resolve tier to "LOW" when unknown
         effective_tier = (tier or "LOW").upper()
 
         if not should_auto_alert(effective_tier):
-            # LOW confidence â†’ send to manual review, not an auto-alert
             logger.info(
-                "[AlertService] Blacklist match %r suppressed (tier=%s) â†’ manual review",
+                "[AlertService] Blacklist match %r suppressed (tier=%s) -> manual review",
                 plate, effective_tier,
             )
-            # Attempt to create a manual review item (best-effort â€” may already exist)
             try:
                 from app.models.manual_review import ManualReview
                 existing = (
@@ -106,7 +108,6 @@ def _blacklist_alerts(db: Session) -> List[CombinedAlertItem]:
                       .first()
                 )
                 if not existing:
-                    # Build a minimal ConsensuResult for the review item
                     dummy = ConsensuResult(
                         track_id="alert_check",
                         plate_number=plate,
@@ -138,7 +139,6 @@ def _blacklist_alerts(db: Session) -> List[CombinedAlertItem]:
                 logger.warning("[AlertService] Could not create review item: %s", exc)
             continue
 
-        # Confidence is sufficient â€” fire the alert
         alerts.append(
             CombinedAlertItem(
                 alert_type   = "BLACKLISTED_VEHICLE",
@@ -160,6 +160,10 @@ def _blacklist_alerts(db: Session) -> List[CombinedAlertItem]:
     return alerts
 
 
+# --------------------------------------------------------------------------- #
+#  Congestion alerts                                                            #
+# --------------------------------------------------------------------------- #
+
 def _congestion_alerts(db: Session) -> List[CombinedAlertItem]:
     now    = datetime.now(timezone.utc)
     alerts : List[CombinedAlertItem] = []
@@ -173,25 +177,50 @@ def _congestion_alerts(db: Session) -> List[CombinedAlertItem]:
             alerts.append(CombinedAlertItem(
                 alert_type="CONGESTION", severity="WARNING",
                 camera_id=item.camera_id, plate_number=None,
-                message=f"High traffic density at {item.location_name} ({item.camera_id}): {item.vehicle_count} vehicles/h.",
+                message=(
+                    f"High traffic density at {item.location_name} "
+                    f"({item.camera_id}): {item.vehicle_count} vehicles/h."
+                ),
                 timestamp=now, demo_data=False,
-                metadata={"vehicle_count": item.vehicle_count, "traffic_density": item.traffic_density},
+                metadata={"vehicle_count": item.vehicle_count,
+                          "traffic_density": item.traffic_density},
             ))
         elif item.traffic_density == "SEVERE":
             alerts.append(CombinedAlertItem(
                 alert_type="CONGESTION", severity="CRITICAL",
                 camera_id=item.camera_id, plate_number=None,
-                message=f"SEVERE congestion at {item.location_name} ({item.camera_id}): {item.vehicle_count} vehicles/h.",
+                message=(
+                    f"SEVERE congestion at {item.location_name} "
+                    f"({item.camera_id}): {item.vehicle_count} vehicles/h."
+                ),
                 timestamp=now, demo_data=False,
-                metadata={"vehicle_count": item.vehicle_count, "traffic_density": item.traffic_density},
+                metadata={"vehicle_count": item.vehicle_count,
+                          "traffic_density": item.traffic_density},
             ))
     return alerts
 
 
+# --------------------------------------------------------------------------- #
+#  Trajectory anomaly alerts                                                   #
+# --------------------------------------------------------------------------- #
+
 def _trajectory_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
+    """
+    Only check plates seen at >= 2 distinct cameras in the last 24 h.
+    Caps at 20 candidates to prevent timeouts.
+    """
     alerts: List[CombinedAlertItem] = []
-    plates = db.query(Detection.plate_number).distinct().all()
-    for (plate,) in plates:
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+
+    multi_cam_plates = (
+        db.query(Detection.plate_number)
+          .filter(Detection.timestamp >= cutoff)
+          .group_by(Detection.plate_number)
+          .having(func.count(func.distinct(Detection.camera_id)) >= 2)
+          .all()
+    )
+
+    for (plate,) in multi_cam_plates[:20]:
         try:
             traj = reconstruct(db, plate)
         except Exception:
@@ -200,9 +229,16 @@ def _trajectory_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
             ts = traj.statistics.last_seen or datetime.now(timezone.utc)
             alerts.append(CombinedAlertItem(
                 alert_type="IMPOSSIBLE_TRAJECTORY", severity="CRITICAL",
-                camera_id=traj.statistics.cameras_visited[-1] if traj.statistics.cameras_visited else None,
+                camera_id=(
+                    traj.statistics.cameras_visited[-1]
+                    if traj.statistics.cameras_visited else None
+                ),
                 plate_number=plate,
-                message=f"IMPOSSIBLE trajectory for {plate}: {traj.statistics.average_speed_kmh:.1f} km/h across {len(traj.statistics.cameras_visited)} cameras.",
+                message=(
+                    f"IMPOSSIBLE trajectory for {plate}: "
+                    f"{traj.statistics.average_speed_kmh:.1f} km/h across "
+                    f"{len(traj.statistics.cameras_visited)} cameras."
+                ),
                 timestamp=ts, demo_data=False,
                 metadata=traj.statistics.model_dump(),
             ))
@@ -210,39 +246,24 @@ def _trajectory_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
             ts = traj.statistics.last_seen or datetime.now(timezone.utc)
             alerts.append(CombinedAlertItem(
                 alert_type="SUSPICIOUS_TRAJECTORY", severity="WARNING",
-                camera_id=traj.statistics.cameras_visited[-1] if traj.statistics.cameras_visited else None,
+                camera_id=(
+                    traj.statistics.cameras_visited[-1]
+                    if traj.statistics.cameras_visited else None
+                ),
                 plate_number=plate,
-                message=f"Suspicious trajectory for {plate}: {traj.statistics.average_speed_kmh:.1f} km/h.",
+                message=(
+                    f"Suspicious trajectory for {plate}: "
+                    f"{traj.statistics.average_speed_kmh:.1f} km/h."
+                ),
                 timestamp=ts, demo_data=False,
                 metadata=traj.statistics.model_dump(),
             ))
     return alerts
 
 
-def _low_confidence_alerts(db: Session) -> List[CombinedAlertItem]:
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=6)
-    alerts: List[CombinedAlertItem] = []
-    rows = (
-        db.query(VehicleEvent)
-          .filter(
-              VehicleEvent.timestamp >= cutoff,
-              VehicleEvent.ocr_confidence.isnot(None),
-              VehicleEvent.ocr_confidence < _LOW_CONF_THRESHOLD,
-              VehicleEvent.plate_number.isnot(None),
-          )
-          .order_by(VehicleEvent.timestamp.desc())
-          .limit(20).all()
-    )
-    for ev in rows:
-        alerts.append(CombinedAlertItem(
-            alert_type="LOW_CONFIDENCE_ANPR", severity="INFO",
-            camera_id=ev.camera_id, plate_number=ev.plate_number,
-            message=f"Low-confidence ANPR at {ev.camera_id}: '{ev.plate_number}' conf={ev.ocr_confidence:.2f}. Manual verification recommended.",
-            timestamp=ev.timestamp, demo_data=False,
-            metadata={"ocr_confidence": ev.ocr_confidence, "confidence_tier": ev.confidence_tier},
-        ))
-    return alerts
-
+# --------------------------------------------------------------------------- #
+#  Frequent sightings                                                          #
+# --------------------------------------------------------------------------- #
 
 def _frequent_sightings_alerts(db: Session) -> List[CombinedAlertItem]:
     cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
@@ -266,27 +287,27 @@ def _frequent_sightings_alerts(db: Session) -> List[CombinedAlertItem]:
     return alerts
 
 
-# â”€â”€ Change 9: COMPLIANCE_ANOMALY alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --------------------------------------------------------------------------- #
+#  Compliance anomaly — meaningful only (max 5, one per camera)               #
+# --------------------------------------------------------------------------- #
 
 def _compliance_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
     """
-    Change 9: Generate COMPLIANCE_ANOMALY alerts for vehicles detected
-    without any usable plate read within the last 6 hours.
+    Only fire when a plate REGION was detected but text could not be read.
+    This is the genuinely suspicious case (obscured/dirty/non-standard plate).
 
-    Trigger conditions:
-      - VehicleEvent row exists (vehicle was detected)
-      - plate_number IS NULL after pipeline processing
-      - vehicle_type is not 'unknown' (rule out contour noise)
-
-    Two reason codes:
-      NO_PLATE_DETECTED          â€” pipeline ran, returned no plate region
-      POSSIBLE_OBSCURED_PLATE    â€” plate region found but OCR produced nothing
-
-    We do NOT claim a plate is illegal or missing â€” only that no plate
-    was readable. The honest reason code is included.
+    Rules to keep list clean:
+      - plate_confidence > 0.30  : a real plate region was found
+      - vehicle_confidence >= 0.60: trust the vehicle detection
+      - One alert per camera     : no duplicate spam
+      - Max 5 alerts             : never floods the list
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=6)
+    cutoff            = datetime.now(timezone.utc) - timedelta(hours=6)
+    _MIN_VEHICLE_CONF = 0.60
+    _MAX_ALERTS       = 5
+
     alerts: List[CombinedAlertItem] = []
+    seen_cameras: set = set()
 
     rows = (
         db.query(VehicleEvent)
@@ -295,43 +316,38 @@ def _compliance_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
               VehicleEvent.plate_number.is_(None),
               VehicleEvent.vehicle_type.isnot(None),
               VehicleEvent.vehicle_type != "unknown",
+              VehicleEvent.plate_confidence.isnot(None),
+              VehicleEvent.plate_confidence > 0.30,
+              VehicleEvent.vehicle_confidence.isnot(None),
+              VehicleEvent.vehicle_confidence >= _MIN_VEHICLE_CONF,
           )
           .order_by(VehicleEvent.timestamp.desc())
-          .limit(30)
+          .limit(50)
           .all()
     )
 
     for ev in rows:
-        # Distinguish: was a plate region detected at all?
-        # plate_confidence is set if the plate detector found a region
-        if ev.plate_confidence is not None and ev.plate_confidence > 0:
-            reason_code = "POSSIBLE_OBSCURED_OR_NONSTANDARD_PLATE"
-            message = (
-                f"Vehicle ({ev.vehicle_type}) detected at {ev.camera_id}: "
-                f"plate region found (conf={ev.plate_confidence:.2f}) "
-                f"but text could not be extracted. "
-                f"Plate may be obscured, non-standard, or at an extreme angle."
-            )
-        else:
-            reason_code = "NO_PLATE_DETECTED"
-            message = (
-                f"Vehicle ({ev.vehicle_type}) detected at {ev.camera_id}: "
-                f"no license plate region detected. "
-                f"Plate may be missing, obscured, or outside camera view."
-            )
+        if len(alerts) >= _MAX_ALERTS:
+            break
+        if ev.camera_id in seen_cameras:
+            continue
+        seen_cameras.add(ev.camera_id)
 
         alerts.append(CombinedAlertItem(
             alert_type   = "COMPLIANCE_ANOMALY",
             severity     = "WARNING",
             camera_id    = ev.camera_id,
             plate_number = None,
-            message      = message,
+            message      = (
+                f"Vehicle ({ev.vehicle_type}) at {ev.camera_id}: "
+                f"plate region found (conf={ev.plate_confidence:.2f}) "
+                f"but text unreadable — may be obscured or non-standard."
+            ),
             timestamp    = ev.timestamp,
             demo_data    = False,
             metadata     = {
-                "reason_code"       : reason_code,
+                "reason_code"       : "PLATE_REGION_UNREADABLE",
                 "vehicle_type"      : ev.vehicle_type,
-                "vehicle_category"  : ev.vehicle_category,
                 "vehicle_confidence": ev.vehicle_confidence,
                 "plate_confidence"  : ev.plate_confidence,
             },
@@ -340,21 +356,22 @@ def _compliance_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
     return alerts
 
 
-# â”€â”€ public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --------------------------------------------------------------------------- #
+#  Public API                                                                  #
+# --------------------------------------------------------------------------- #
 
 def get_combined_alerts(db: Session, limit: int = 50) -> CombinedAlertsResponse:
     """
-    Merge all alert sources, sort by severity (CRITICAL first).
+    Merge all alert sources, sort by severity (CRITICAL first), cap at limit.
     """
     all_alerts: List[CombinedAlertItem] = []
 
     generators = [
-        ("blacklist",    _blacklist_alerts),
-        ("congestion",   _congestion_alerts),
-        ("trajectory",   _trajectory_anomaly_alerts),
-        ("low_conf",     _low_confidence_alerts),
-        ("frequent",     _frequent_sightings_alerts),
-        ("compliance",   _compliance_anomaly_alerts),   # Change 9
+        ("blacklist",   _blacklist_alerts),
+        ("congestion",  _congestion_alerts),
+        ("trajectory",  _trajectory_anomaly_alerts),
+        ("frequent",    _frequent_sightings_alerts),
+        ("compliance",  _compliance_anomaly_alerts),
     ]
 
     for name, fn in generators:
@@ -377,4 +394,3 @@ def get_combined_alerts(db: Session, limit: int = 50) -> CombinedAlertsResponse:
         info_count     = info,
         alerts         = all_alerts,
     )
-
