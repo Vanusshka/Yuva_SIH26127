@@ -64,10 +64,10 @@ const CityMapComponent = dynamic(
 
 // â”€â”€ shared UI helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const Panel = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Panel = ({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) => (
   <article className="panel">
     <div className="panel-header">
-      <div><h2>{title}</h2><p>Live operational data</p></div>
+      <div><h2>{title}</h2><p>{subtitle ?? 'Live operational data'}</p></div>
     </div>
     <div style={{ padding: '18px' }}>{children}</div>
   </article>
@@ -152,26 +152,80 @@ function PlaceholderBadge() {
 }
 
 /** Vertical bar chart using only CSS/divs - no external charting library */
-const Chart = ({ data, bars = false }: { data?: number[]; bars?: boolean }) => {
+const Chart = ({ data, bars = false, xLabels }: { data?: number[]; bars?: boolean; xLabels?: string[] }) => {
   const values = data ?? [45, 68, 52, 82, 60, 94, 72, 88, 64, 78, 51, 86]
-  const max = Math.max(...values, 1)
+  const max    = Math.max(...values, 1)
+  const ticks  = 4  // number of horizontal grid lines
+
+  // X-axis labels: use provided, else 0/6/12/18/23 for 24-point data, else indices
+  const showXLabels = values.length === 24
+    ? values.map((_, i) => i % 3 === 0 ? `${i}h` : '')
+    : (xLabels ?? values.map((_, i) => String(i + 1)))
+
   return (
-    <div style={{
-      height: 240, display: 'flex', alignItems: 'end', gap: 10,
-      padding: '20px 10px',
-      background: 'linear-gradient(to bottom, transparent 49%, var(--border) 50%, transparent 51%)',
-    }}>
-      {values.map((v, i) => (
-        <div
-          key={i}
-          style={{
-            flex: 1, height: `${(v / max) * 100}%`,
-            background: bars ? 'var(--amber)' : 'var(--cyan)',
-            borderRadius: '5px 5px 0 0', opacity: 0.85,
-            transition: 'height .3s ease',
-          }}
-        />
-      ))}
+    <div style={{ padding: '8px 4px 0', userSelect: 'none' }}>
+      {/* Chart area */}
+      <div style={{ display: 'flex', gap: 0 }}>
+        {/* Y-axis labels */}
+        <div style={{
+          display: 'flex', flexDirection: 'column-reverse', justifyContent: 'space-between',
+          width: 32, paddingBottom: 20, paddingRight: 4, flexShrink: 0,
+        }}>
+          {Array.from({ length: ticks + 1 }, (_, i) => (
+            <span key={i} style={{ fontSize: 9, color: 'var(--muted-foreground)', textAlign: 'right', lineHeight: 1 }}>
+              {Math.round((max / ticks) * i)}
+            </span>
+          ))}
+        </div>
+
+        {/* Bars + grid */}
+        <div style={{ flex: 1, position: 'relative' }}>
+          {/* Horizontal grid lines */}
+          {Array.from({ length: ticks + 1 }, (_, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              bottom: `calc(20px + ${(i / ticks) * (100 - 20 / 200 * 100)}%)`,
+              left: 0, right: 0,
+              borderTop: `1px ${i === 0 ? 'solid' : 'dashed'} var(--border)`,
+              opacity: i === 0 ? 1 : 0.5,
+            }} />
+          ))}
+
+          {/* Bar columns */}
+          <div style={{
+            display: 'flex', alignItems: 'flex-end', gap: 3,
+            height: 180, paddingBottom: 20,
+          }}>
+            {values.map((v, i) => (
+              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                <div
+                  title={`${showXLabels[i] || i}: ${v}`}
+                  style={{
+                    width: '100%',
+                    height: `${Math.max((v / max) * 100, v > 0 ? 2 : 0)}%`,
+                    background: bars
+                      ? 'linear-gradient(to top, #d97706, #fbbf24)'
+                      : 'linear-gradient(to top, #0891b2, #67e8f9)',
+                    borderRadius: '3px 3px 0 0',
+                    opacity: 0.85,
+                    transition: 'height .3s ease',
+                    minHeight: v > 0 ? 3 : 0,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* X-axis labels */}
+          <div style={{ display: 'flex', gap: 3, marginTop: 2 }}>
+            {showXLabels.map((lbl, i) => (
+              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--muted-foreground)', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                {lbl}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -292,7 +346,7 @@ export function Overview() {
       </div>
 
       <section className="dashboard-grid">
-        <Panel title="Traffic Volume (24h)">
+        <Panel title="Traffic Volume (24h)" subtitle="Vehicles detected per hour">
           <Chart data={trendData} />
         </Panel>
         <Panel title="Traffic Summary">
@@ -701,11 +755,11 @@ export function TrafficAnalytics() {
       </div>
 
       <section className="dashboard-grid">
-        <Panel title="Traffic trend (24h)">
+        <Panel title="Traffic trend (24h)" subtitle="Vehicles detected per hour — last 24h">
           <Chart data={trendData} />
         </Panel>
-        <Panel title="Vehicle type distribution">
-          <Chart data={typeData} bars />
+        <Panel title="Vehicle type distribution" subtitle="Count by vehicle class">
+          <Chart data={typeData} bars xLabels={d?.vehicle_distribution.map(v => v.category.slice(0,4)) ?? []} />
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: '6px 0', fontSize: 10 }}>
             {(d?.vehicle_distribution ?? []).map(v => (
               <span key={v.category} style={{ color: 'var(--muted-foreground)' }}>
@@ -729,7 +783,7 @@ export function TrafficAnalytics() {
             </p>
           )}
         </Panel>
-        <Panel title="Peak traffic hours">
+        <Panel title="Peak traffic hours" subtitle="Hourly vehicle count — last 24h">
           <Chart data={trendData} />
         </Panel>
       </section>
