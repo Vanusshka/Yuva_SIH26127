@@ -86,14 +86,15 @@ def _clean(raw: str) -> str:
 def _score_result(r: OCRResult) -> float:
     """
     Composite score to pick the best variant.
-    Longer, higher-confidence results with more chars score better.
-    Short fragments score low regardless of confidence.
+    Confidence is weighted heavily — we want the highest-confidence read,
+    not just the longest. A short high-confidence read beats a long noisy one.
     """
     if r.is_noise:
         return 0.0
     length_bonus = min(1.0, r.char_count / 10.0)   # 10 chars = full Indian plate
     conf_weight  = r.ocr_confidence
-    return 0.6 * conf_weight + 0.4 * length_bonus
+    # 80% confidence, 20% length — prioritise accuracy over completeness
+    return 0.80 * conf_weight + 0.20 * length_bonus
 
 
 # ── EasyOCR singleton ─────────────────────────────────────────────────────────

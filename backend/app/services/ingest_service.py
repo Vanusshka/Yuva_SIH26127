@@ -622,16 +622,29 @@ def ingest_video(
     _check_compliance_anomalies(tracker, evidence_map, camera_id, base_timestamp, db)
 
     # ── Build final per-detection results ─────────────────────────────────────
+    # One row per TRACK (not per frame). Pick the frame with the best plate
+    # evidence for each tracked vehicle.
     all_detections: List[IngestDetection] = []
-    seen_key = set()
 
+    # Group stored frames by track_id
+    from collections import defaultdict as _dd
+    track_frames: Dict[str, list] = _dd(list)
     for track_id, vehicle, plate, ocr, fn, frame_ts in frame_store:
-        key = (track_id, fn)
-        if key in seen_key:
-            continue
-        seen_key.add(key)
+        track_frames[track_id].append((vehicle, plate, ocr, fn, frame_ts))
+
+    for track_id, frames in track_frames.items():
         final = evidence_map[track_id].consensus()
-        det   = _build_ingest_detection(
+
+        # Pick the representative frame: prefer the frame whose ocr_confidence
+        # is highest (matches the consensus quality). Fall back to last frame.
+        def _frame_score(entry):
+            _, _, ocr, _, _ = entry
+            return ocr.ocr_confidence if (ocr and not ocr.is_noise) else 0.0
+
+        best_frame = max(frames, key=_frame_score)
+        vehicle, plate, ocr, fn, frame_ts = best_frame
+
+        det = _build_ingest_detection(
             track_id, vehicle, plate, ocr, final,
             fn, frame_ts, camera_id, lat, lon, video_path.name, db,
         )

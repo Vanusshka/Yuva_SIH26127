@@ -184,14 +184,19 @@ class PlateEvidence:
             )
 
         # ── Priority 1: complete high-confidence read ─────────────────────────
+        # Accept plates that match full Indian pattern (XX00XX0000) at ≥ 65% conf,
+        # OR any read ≥ 8 chars at ≥ VERIFIED_CONF_THRESH.
         complete = [
             o for o in non_empty
             if o.char_count >= _FULL_PLATE_MIN_CHARS
-            and o.ocr_confidence >= VERIFIED_CONF_THRESH
+            and (
+                o.ocr_confidence >= VERIFIED_CONF_THRESH
+                or (o.ocr_confidence >= 0.65 and _matches_plate_pattern(o.plate_text))
+            )
         ]
         if complete:
-            # prefer longest, then highest confidence
-            best = max(complete, key=lambda o: (o.char_count, o.ocr_confidence))
+            # prefer highest confidence, then longest
+            best = max(complete, key=lambda o: (o.ocr_confidence, o.char_count))
             return _build_result(self.track_id, best, non_empty, PlateStatus.VERIFIED)
 
         # ── Priority 2: most-repeated text ───────────────────────────────────
@@ -202,12 +207,14 @@ class PlateEvidence:
         # Find text seen in multiple frames
         repeated = {t: obs for t, obs in freq.items() if len(obs) >= 2}
         if repeated:
-            # Pick the repeated text with the highest total char-count × avg conf
+            # Pick the repeated text with the highest individual confidence read
             def _rep_score(t: str) -> float:
                 obs_list = repeated[t]
-                avg_conf = sum(o.ocr_confidence for o in obs_list) / len(obs_list)
-                return len(t) * avg_conf
+                # Score = max individual confidence × length (prefer complete reads)
+                best_conf = max(o.ocr_confidence for o in obs_list)
+                return best_conf * len(t)
             best_text = max(repeated, key=_rep_score)
+            # Use the single best-confidence observation of that text
             best_obs  = max(repeated[best_text], key=lambda o: o.ocr_confidence)
             status    = (
                 PlateStatus.VERIFIED
@@ -216,8 +223,8 @@ class PlateEvidence:
             )
             return _build_result(self.track_id, best_obs, non_empty, status)
 
-        # ── Priority 3: longest single observation ────────────────────────────
-        best = max(non_empty, key=lambda o: (o.char_count, o.ocr_confidence))
+        # ── Priority 3: highest-confidence single observation ────────────────
+        best = max(non_empty, key=lambda o: (o.ocr_confidence, o.char_count))
         status = classify_observation(best)
         return _build_result(self.track_id, best, non_empty, status)
 
