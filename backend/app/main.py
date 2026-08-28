@@ -823,11 +823,11 @@ async def process_video_p7(
     **Frame sampling** (default every 10th frame) reduces processing time
     significantly. For a 30-fps video this processes 3 frames/second of footage.
 
-    **Recommended sample videos:** Place `.mp4` files in `data/raw/traffic_videos/`.
-
-    **Note:** Processing time scales linearly with `total_frames / frame_skip`
-    and with image complexity. Large HD videos may take several minutes on CPU.
+    **Note:** Processing runs in a background thread so the API stays responsive
+    (health checks, alerts, analytics) during heavy CPU video processing.
     """
+    from starlette.concurrency import run_in_threadpool
+
     ts: Optional[datetime] = None
     if timestamp:
         try:
@@ -843,12 +843,15 @@ async def process_video_p7(
 
     saved_path = await save_video_upload(file)
     try:
-        result = ingest_video(
-            video_path    = saved_path,
-            camera_id     = camera_id,
-            base_timestamp= ts,
-            frame_skip    = frame_skip,
-            db            = db,
+        # Run the CPU-heavy pipeline in a thread pool so the event loop
+        # stays free to answer /health, /alerts, /analytics during processing.
+        result = await run_in_threadpool(
+            ingest_video,
+            saved_path,
+            camera_id,
+            ts,
+            frame_skip,
+            db,
         )
     except ValueError as exc:
         _cleanup_upload(saved_path)
