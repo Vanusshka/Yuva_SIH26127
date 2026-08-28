@@ -29,7 +29,13 @@ import {
   CityMap, Alerts, BlacklistMonitoring, SystemHealth, ManualReviewPage,
 } from '@/src/route-pages/Pages'
 import VideoUpload from '@/src/components/VideoUpload'
+import dynamic from 'next/dynamic'
 import { isAuthenticated } from '@/src/auth'
+
+const TrajectoryExplorer = dynamic(
+  () => import('@/src/components/TrajectoryExplorer'),
+  { ssr: false }
+)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page frame wrapper
@@ -87,6 +93,7 @@ function AppRoutes() {
         <Route path="blacklist"         element={<><PageFrame>Blacklist Monitoring</PageFrame><BlacklistMonitoring /></>} />
         <Route path="system-health"     element={<><PageFrame>System Health</PageFrame><SystemHealth /></>} />
         <Route path="manual-review"     element={<><PageFrame>Manual Review Queue</PageFrame><ManualReviewPage /></>} />
+        <Route path="trajectory-explorer" element={<><PageFrame>Trajectory Explorer</PageFrame><TrajectoryExplorer /></>} />
       </Route>
 
       {/* ── Legacy redirect shims ── */}

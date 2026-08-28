@@ -1476,3 +1476,53 @@ def get_trajectory_fuzzy(plate: str, db: Session = Depends(get_db)):
     """
     from app.trajectory.engine import reconstruct_fuzzy
     return reconstruct_fuzzy(db, plate)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TRAJECTORY EXPLORER — Demo Dataset endpoints
+# ═══════════════════════════════════════════════════════════════════════════════
+
+from app.services.trajectory_demo import get_all_demo_vehicles, get_demo_vehicle
+
+
+@app.get(
+    "/trajectory-explorer/vehicles",
+    tags    = ["Trajectory Explorer"],
+    summary = "List all demo vehicles available in the Trajectory Explorer",
+)
+def trajectory_explorer_list():
+    """
+    Returns the built-in demo vehicle list for the Trajectory Explorer feature.
+
+    ⚠ **DEMO / SAMPLE DATA** — Not from real CCTV cameras.
+    Built-in dataset to demonstrate multi-camera trajectory reconstruction.
+    """
+    return {
+        "data_source": "DEMO_DATASET",
+        "disclaimer" : "DEMO / SAMPLE DATA — Not from real CCTV. Built-in demo observations only.",
+        "vehicles"   : get_all_demo_vehicles(),
+    }
+
+
+@app.get(
+    "/trajectory-explorer/{vehicle_id}",
+    tags    = ["Trajectory Explorer"],
+    summary = "Get full trajectory for a demo vehicle by Vehicle ID or Plate Number",
+)
+def trajectory_explorer_detail(vehicle_id: str):
+    """
+    Returns chronological observations + hop metrics for a demo vehicle.
+
+    `vehicle_id` can be either the Vehicle ID (e.g. VH-DEMO-001)
+    or the number plate (e.g. TS09AB1234).
+
+    ⚠ **DEMO / SAMPLE DATA** — Not from real CCTV cameras.
+    """
+    data = get_demo_vehicle(vehicle_id)
+    if data is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Demo vehicle '{vehicle_id}' not found. "
+                   f"Try: VH-DEMO-001, TS09AB1234, MH12XY5678, DL01ZZ9999"
+        )
+    return data
