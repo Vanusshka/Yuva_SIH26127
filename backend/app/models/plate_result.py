@@ -37,7 +37,8 @@ class PlateStatus(str, Enum):
 # Minimum OCR confidence to qualify as VERIFIED
 VERIFIED_CONF_THRESH    = 0.70
 # Minimum OCR confidence to qualify as PARTIAL (not LOW_CONFIDENCE)
-PARTIAL_CONF_THRESH     = 0.40
+# Raised from 0.40 → 0.60 so that weak reads (28%, 37%, 46%) are NOT displayed
+PARTIAL_CONF_THRESH     = 0.60
 # Minimum character count to qualify as VERIFIED
 VERIFIED_MIN_CHARS      = 5
 # Minimum character count to qualify as PARTIAL
@@ -49,14 +50,38 @@ _FULL_PLATE_MIN_CHARS   = 8
 MIN_OBSERVATIONS_TO_VERIFY = 1   # even 1 strong read can verify
 
 # ── Plate patterns ────────────────────────────────────────────────────────────
+# Indian plate format: XX-00-XX-0000  (state code + district + series + number)
+# Examples: TS09AB1234  MH12XY5678  DL01ZZ9999  KA03MN4321
+# Pattern requires: 2 letters, 1-2 digits, 1-3 letters, 1-4 digits
 _INDIAN_PLATE_RE = re.compile(
     r"^[A-Z]{2}\d{1,2}[A-Z]{1,3}\d{1,4}$"
+)
+
+# Partial pattern: at minimum starts with 2 letters then digits/letters
+# This rejects "IEWE38432E" (4 leading letters), "BU3E4GD" (wrong structure), etc.
+_INDIAN_PLATE_PARTIAL_RE = re.compile(
+    r"^[A-Z]{2}\d"   # must start with exactly 2 letters followed by a digit
 )
 
 
 def _matches_plate_pattern(text: str) -> bool:
     """True if text looks like a complete Indian plate."""
     return bool(_INDIAN_PLATE_RE.match(text.strip().upper()))
+
+
+def _plausible_plate(text: str) -> bool:
+    """
+    True if text is at least structurally plausible as an Indian plate fragment.
+    Rejects strings that start with >2 letters (e.g. IEWE...) or have no
+    recognisable state-code + digit start (e.g. BU3E4GD).
+
+    This is intentionally permissive — it blocks obvious garbage without
+    requiring a full pattern match.
+    """
+    if not text or len(text) < 3:
+        return False
+    # Must start with exactly 2 alpha chars followed by at least one digit
+    return bool(_INDIAN_PLATE_PARTIAL_RE.match(text.strip().upper()))
 
 
 # ── Single-observation result ─────────────────────────────────────────────────
@@ -134,7 +159,15 @@ class PlateEvidence:
             )
 
         # ── Filter useful observations ────────────────────────────────────────
-        non_empty = [o for o in self.observations if o.plate_text and o.char_count >= PARTIAL_MIN_CHARS]
+        # Require: non-empty text, minimum chars, plausible Indian plate structure,
+        # and a meaningful confidence (> 0). This blocks "IEWE38432E"-style garbage.
+        non_empty = [
+            o for o in self.observations
+            if o.plate_text
+            and o.char_count >= PARTIAL_MIN_CHARS
+            and o.ocr_confidence > 0.0
+            and _plausible_plate(o.plate_text)
+        ]
 
         if not non_empty:
             return ConsensuResult(

@@ -282,7 +282,10 @@ def _detect_frame(
                 logger.warning("[Ingest] OCR failed frame %d track %s: %s",
                                frame_number, track_id, exc)
 
-        if best_ocr is not None:
+        if best_ocr is not None and best_ocr.ocr_confidence > 0.0:
+            # Only accumulate observations that have non-zero confidence.
+            # Zero-confidence reads (random OCR noise) must not pollute the
+            # multi-frame evidence pool.
             obs = PlateObservation(
                 frame_number   = frame_number,
                 raw_ocr_text   = best_ocr.raw_text,

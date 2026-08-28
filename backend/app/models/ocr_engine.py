@@ -183,6 +183,13 @@ def _run_ocr(image: np.ndarray, variant_name: str = "unknown") -> OCRResult:
         conf     = 0.0
         is_noise = True
 
+    # Reject very low confidence — below 15% is effectively random OCR output
+    # (EasyOCR returns non-zero confidence even on unreadable crops)
+    if conf < 0.15:
+        cleaned  = ""
+        conf     = 0.0
+        is_noise = True
+
     # If too short, zero out confidence so callers don't treat it as a plate
     if is_noise:
         cleaned = ""
