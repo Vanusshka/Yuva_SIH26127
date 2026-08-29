@@ -29,6 +29,19 @@ import {
 
 // ── constants ─────────────────────────────────────────────────────────────────
 
+const STORAGE_KEY = 'urbanEye_videoUpload_v1'
+
+/** Serialisable subset of state persisted to sessionStorage */
+interface PersistedState {
+  fileName    : string
+  fileSize    : number
+  cameraId    : string
+  frameSkip   : number
+  uploadState : UploadState
+  elapsedSec  : number
+  result      : VideoIngestResponse | null
+}
+
 const ACCEPTED = ['.mp4', '.avi', '.mov', '.mkv']
 const MAX_SIZE_GB = 2
 const MAX_SIZE_BYTES = MAX_SIZE_GB * 1024 ** 3
@@ -171,6 +184,49 @@ export default function VideoUpload() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const timerRef     = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // ── Restore persisted state on mount ─────────────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY)
+      if (!raw) return
+      const saved: PersistedState = JSON.parse(raw)
+      // Restore the serialisable fields
+      setCameraId(saved.cameraId)
+      setFrameSkip(saved.frameSkip)
+      setElapsedSec(saved.elapsedSec ?? 0)
+      if (saved.result && (saved.uploadState === 'done' || saved.uploadState === 'error')) {
+        setResult(saved.result)
+        setUploadState(saved.uploadState)
+        // Restore minimal file info for the "Processing Info" panel
+        // File object itself cannot be restored — show info from result
+      }
+    } catch {
+      // Corrupt storage — ignore
+      sessionStorage.removeItem(STORAGE_KEY)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])   // run once on mount only
+
+  // ── Persist serialisable state on every relevant change ──────────────────
+  useEffect(() => {
+    // Only persist when there is something worth saving
+    if (uploadState === 'idle' && !result) return
+    try {
+      const toSave: PersistedState = {
+        fileName   : file?.name ?? result?.source_file ?? '',
+        fileSize   : file?.size ?? 0,
+        cameraId,
+        frameSkip,
+        uploadState,
+        elapsedSec,
+        result,
+      }
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
+    } catch {
+      // Storage full or unavailable — ignore
+    }
+  }, [uploadState, result, cameraId, frameSkip, elapsedSec, file])
+
   // Cleanup preview URL on unmount
   useEffect(() => {
     return () => {
@@ -237,6 +293,7 @@ export default function VideoUpload() {
     setFileError(null)
     setDoneStages(new Set())
     setActiveStage(null)
+    sessionStorage.removeItem(STORAGE_KEY)
   }, [previewUrl])
 
   // ── processing pipeline ──────────────────────────────────────────────────
@@ -669,6 +726,7 @@ export default function VideoUpload() {
               <p style={{ color: '#3a9e73', fontSize: 10, margin: '2px 0 0' }}>
                 {result.source_file} processed in {formatDuration(elapsedSec)} ·
                 {result.frames_processed} frames analysed (every {result.frame_skip}th frame)
+                {!file && <span style={{ color: '#5a9e7a' }}> · Results restored from session — upload the video again to re-process.</span>}
               </p>
             </div>
             <button className="date-button" onClick={handleReset} style={{ fontSize: 11 }}>
