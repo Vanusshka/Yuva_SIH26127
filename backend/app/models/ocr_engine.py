@@ -142,6 +142,82 @@ class _EasyOCREngine:
             return "", 0.0
 
 
+# ── PaddleOCR fine-tuned recognizer ──────────────────────────────────────────
+
+class _PaddleOCREngine:
+    """
+    Fine-tuned PaddleOCR SVTR_LCNet recognizer trained specifically on
+    Indian license plates (75.4% exact-match / 91.3% char-level accuracy on
+    held-out test set — see plate_ocr_backup training run for details).
+
+    Requires the exported inference model (inference.pdiparams + .json)
+    plus PaddleOCR's ppocr/ and tools/infer/ source subtrees to be present
+    under PADDLEOCR_REPO_DIR (configured in app/config.py).
+
+    Uses PaddleOCR's TextRecognizer class directly rather than the high-level
+    pip `paddleocr` package — consistent with what was validated end-to-end
+    during training/eval.
+
+    Falls back gracefully: if the model dir is missing or load fails,
+    read_image() returns ("", 0.0) and the caller falls through to EasyOCR.
+    """
+
+    _recognizer = None
+
+    @classmethod
+    def _get_recognizer(cls):
+        if cls._recognizer is None:
+            import sys
+            from app.config import (
+                PADDLEOCR_REPO_DIR,
+                PADDLE_REC_MODEL_DIR,
+                PADDLE_CHAR_DICT_PATH,
+            )
+
+            sys.path.insert(0, str(PADDLEOCR_REPO_DIR))
+
+            from tools.infer.predict_rec import TextRecognizer
+            from tools.infer.utility import init_args
+
+            logger.info("[OCR] Initialising PaddleOCR (fine-tuned) recognizer...")
+
+            parser   = init_args()
+            rec_args = parser.parse_args([])
+
+            rec_args.rec_model_dir      = str(PADDLE_REC_MODEL_DIR)
+            rec_args.rec_image_shape    = "3, 48, 320"
+            rec_args.rec_algorithm      = "SVTR_LCNet"
+            rec_args.rec_batch_num      = 6
+            rec_args.max_text_length    = 15
+            rec_args.use_space_char     = False
+            rec_args.rec_char_dict_path = str(PADDLE_CHAR_DICT_PATH)
+            rec_args.use_gpu            = False   # CPU-only, matching existing setup
+
+            cls._recognizer = TextRecognizer(rec_args)
+            logger.info("[OCR] PaddleOCR (fine-tuned) ready.")
+
+        return cls._recognizer
+
+    @classmethod
+    def read_image(cls, image: np.ndarray) -> Tuple[str, float]:
+        """
+        Run the fine-tuned PaddleOCR recognizer on `image`.
+        Returns (raw_text, confidence). Returns ("", 0.0) on any failure —
+        never raises, matching _EasyOCREngine's contract.
+        """
+        try:
+            recognizer = cls._get_recognizer()
+            result     = recognizer([image])
+            # result structure: [[(text, confidence)]]
+            if not result or not result[0]:
+                return "", 0.0
+            text, conf = result[0][0]
+            return str(text), float(conf)
+        except Exception as exc:
+            logger.warning("[OCR] PaddleOCR read failed: %s", exc)
+            return "", 0.0
+
+
 # ── Core OCR function ─────────────────────────────────────────────────────────
 
 def _run_ocr(image: np.ndarray, variant_name: str = "unknown") -> OCRResult:
@@ -156,7 +232,13 @@ def _run_ocr(image: np.ndarray, variant_name: str = "unknown") -> OCRResult:
             is_fragment=False, is_noise=True,
         )
 
-    if OCR_ENGINE == "easyocr":
+    if OCR_ENGINE == "paddleocr":
+        raw_text, conf = _PaddleOCREngine.read_image(image)
+        # Hard fallback: if PaddleOCR returned nothing (model not loaded yet /
+        # inference error), drop through to EasyOCR so the pipeline keeps working.
+        if not raw_text:
+            raw_text, conf = _EasyOCREngine.read_image(image)
+    elif OCR_ENGINE == "easyocr":
         raw_text, conf = _EasyOCREngine.read_image(image)
     else:
         raw_text, conf = _run_tesseract(image)

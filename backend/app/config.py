@@ -20,7 +20,7 @@ for _d in (INPUT_DIR, OUTPUT_DIR, MODELS_DIR):
 DATABASE_URL = f"sqlite:///{DATA_DIR / 'traffic.db'}"
 
 # ── Vehicle Detection (YOLOv8) ────────────────────────────────────────────────
-VEHICLE_MODEL_NAME   = "yolov8n.pt"
+VEHICLE_MODEL_NAME   = "best.pt"
 VEHICLE_CONF_THRESH  = 0.40
 
 # COCO class IDs recognised by YOLOv8n
@@ -71,8 +71,22 @@ PLATE_MODEL_URL      = (
 PLATE_CONF_THRESH    = 0.30
 
 # ── OCR ───────────────────────────────────────────────────────────────────────
-OCR_ENGINE           = "easyocr"
+# Switch to "paddleocr" to use the fine-tuned SVTR_LCNet recognizer.
+# Switch to "easyocr" or "tesseract" for the generic fallbacks.
+OCR_ENGINE           = "paddleocr"
 OCR_LANGUAGES        = ["en"]
+
+# ── PaddleOCR fine-tuned recognizer paths ────────────────────────────────────
+# Only used when OCR_ENGINE == "paddleocr".
+#
+# PADDLEOCR_REPO_DIR   : directory containing ppocr/ and tools/infer/ subtrees
+#                        (NOT the full PaddleOCR repo — only those two folders).
+# PADDLE_REC_MODEL_DIR : exported inference model directory
+#                        (inference.pdiparams + inference.json inside).
+# PADDLE_CHAR_DICT_PATH: character dictionary used during training.
+PADDLEOCR_REPO_DIR    = MODELS_DIR / "paddleocr_infer"
+PADDLE_REC_MODEL_DIR  = MODELS_DIR / "plates_inference_model_v2"
+PADDLE_CHAR_DICT_PATH = PADDLEOCR_REPO_DIR / "ppocr" / "utils" / "en_dict.txt"
 
 # ── API ───────────────────────────────────────────────────────────────────────
 API_TITLE   = "SIH26127 ANPR API"
