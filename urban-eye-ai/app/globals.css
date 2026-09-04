@@ -5,23 +5,23 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  color-scheme: light;
-  --background: #f4f7fa;
-  --foreground: #15253a;
-  --card: #ffffff;
-  --card-foreground: #15253a;
-  --muted: #eef3f7;
-  --muted-foreground: #728197;
-  --border: #dde5ec;
-  --primary: #0c7f9d;
+  color-scheme: dark;
+  --background: #0d1520;
+  --foreground: #d4e4f0;
+  --card: #131f2e;
+  --card-foreground: #d4e4f0;
+  --muted: #1a2840;
+  --muted-foreground: #6b8ba4;
+  --border: #1e3048;
+  --primary: #08a6d1;
   --primary-foreground: #ffffff;
   --cyan: #08a6d1;
-  --navy: #101d30;
-  --navy-muted: #8fa2b8;
-  --amber: #eea524;
-  --green: #24ae76;
-  --red: #db5b5d;
-  --purple: #7c70d8;
+  --navy: #080f1a;
+  --navy-muted: #5a7a94;
+  --amber: #f59e0b;
+  --green: #10b981;
+  --red: #ef4444;
+  --purple: #818cf8;
   --radius: 0.65rem;
 }
 
@@ -237,3 +237,196 @@ button { cursor: pointer; }
 .cam-dot.inactive{ background: #a0b4c4; }
 /* Trajectory line */
 .traj-line { stroke-linecap: round; stroke-linejoin: round; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SMART-CITY DARK THEME — Traffic Operations Centre
+   All overrides are additive. No functionality is removed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Body & shell ─────────────────────────────────────────────────────────── */
+body { background: var(--background); color: var(--foreground); }
+
+/* ── Sidebar — deeper dark with cyan accent ──────────────────────────────── */
+.sidebar { background: #080e18; border-right: 1px solid #0f1e2e; }
+.brand { border-bottom: 1px solid #0f1e2e; }
+.brand-mark { background: linear-gradient(135deg, #0c5f7a, #08a6d1); color: white; box-shadow: 0 0 14px #08a6d130; }
+.brand strong span { color: #38d4f0; }
+.brand small { color: #3a6080; }
+.workspace-select { background: #0d1829; border-color: #182f46; color: #b0cce0; }
+.nav-item { color: #4a6e88; }
+.nav-item:hover { background: #0d1e30; color: #8ab8d4; }
+.nav-item.active { background: #0d2a3d; color: #e0f6ff; box-shadow: inset 3px 0 #08a6d1; }
+.nav-item.active svg { color: #38d4f0; }
+.nav-chevron { color: #2a4a60 !important; }
+.api-status { border-color: #0f1e2e; }
+.api-status strong { color: #8ab8d4; }
+.user-card { color: #8ab8d4; }
+.avatar, .topbar-avatar { background: #0d2a3d; color: #38d4f0; }
+.sidebar-bottom { border-top: 1px solid #0f1e2e; }
+.pulse, .status-dot { background: var(--green); box-shadow: 0 0 0 4px #0d2e25; }
+
+/* ── Topbar ───────────────────────────────────────────────────────────────── */
+.topbar { background: #0d1520; border-bottom: 1px solid #1a2f44; }
+.topbar-avatar { background: #0d2a3d; color: #38d4f0; }
+.live-indicator { color: #10b981; }
+.live-indicator span { background: #10b981; box-shadow: 0 0 6px #10b98166; }
+.topbar-note { color: #3a5a70; }
+.notification-button svg, .help-button svg { color: #3a5a70; }
+.notification-button span { background: var(--red); }
+
+/* ── Page heading ─────────────────────────────────────────────────────────── */
+.page-heading h1 { color: #c8dff0; letter-spacing: -.8px; }
+.breadcrumbs { color: #2a4a60; }
+.breadcrumbs strong { color: #3a6a88; }
+.date-button { background: #0d1829; border-color: #1a2f44; color: #5a8aa8; }
+.date-button:hover { border-color: #08a6d1; color: #38d4f0; }
+.primary-button { background: #08a6d1; border-color: #08a6d1; box-shadow: 0 0 16px #08a6d130; }
+.primary-button:hover { background: #0bbfe8; box-shadow: 0 0 22px #08a6d155; }
+
+/* ── KPI cards ────────────────────────────────────────────────────────────── */
+.kpi-card {
+  background: linear-gradient(145deg, #131f2e, #0f1929);
+  border: 1px solid #1e3048;
+  box-shadow: 0 2px 12px #00000040;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #08a6d155, transparent);
+}
+.kpi-value { color: #d4e4f0; }
+.kpi-label { color: #4a6e88; }
+.kpi-trend { color: var(--green); }
+.kpi-trend span { color: #3a5a70; }
+.kpi-trend.down { color: var(--amber); }
+.kpi-progress { background: #1a2f44; }
+.kpi-subtext { color: #3a5a70; }
+.cyan-bg  { color: #38d4f0; background: #072030; border: 1px solid #0a3a52; }
+.amber-bg { color: #f59e0b; background: #1c1506; border: 1px solid #3a2800; }
+.green-bg { color: #10b981; background: #021a0f; border: 1px solid #054022; }
+.purple-bg{ color: #818cf8; background: #0e0e22; border: 1px solid #1e1e48; }
+.red-bg   { color: #ef4444; background: #1a0505; border: 1px solid #3a0808; }
+
+/* ── Panels ───────────────────────────────────────────────────────────────── */
+.panel {
+  background: #131f2e;
+  border: 1px solid #1e3048;
+  box-shadow: 0 2px 16px #00000050;
+}
+.panel-header h2 { color: #b0cce0; font-size: 13px; font-weight: 700; letter-spacing: -.2px; }
+.panel-header p { color: #3a5a70; font-size: 10px; }
+.segmented { border-color: #1e3048; }
+.segmented button { background: #0d1829; color: #3a5a70; }
+.segmented button + button { border-left-color: #1e3048; }
+.segmented button.selected { background: #0d2a3d; color: #38d4f0; }
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+th { color: #3a5a6a; border-bottom-color: #1e3048; font-size: 9px; letter-spacing: 1px; }
+td { color: #7aa0b8; border-bottom-color: #131f2e; }
+tr:hover td { background: #0d1829; }
+tr:last-child td { border-bottom: 0; }
+.table-search { background: #0d1829; border-color: #1e3048; color: #3a6080; }
+.table-search input { color: #7aa0b8; background: transparent; }
+.table-search input::placeholder { color: #2a4560; }
+
+/* Plate display */
+.plate { color: #c0dff0; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: .5px; }
+.plate-mark { background: var(--cyan); }
+.plate-mark.amber { background: var(--amber); }
+.plate-mark.green { background: var(--green); }
+.confidence { color: #10b981; font-weight: 700; }
+.location svg { color: #3a5a70; }
+
+/* ── Status pills ─────────────────────────────────────────────────────────── */
+.status-pill { background: #021a0f; color: #10b981; border: 1px solid #054022; }
+.status-pill.amber { background: #1c1506; color: #f59e0b; border: 1px solid #3a2800; }
+.status-pill.red { background: #1a0505; color: #ef4444; border: 1px solid #3a0808; }
+.status-pill.cyan { background: #072030; color: #38d4f0; border: 1px solid #0a3a52; }
+
+/* ── Alert rows ───────────────────────────────────────────────────────────── */
+.alert-row { border-bottom-color: #131f2e; }
+.alert-row:hover { background: #0d1829; }
+.alert-icon.critical { color: #ef4444; background: #1a050a; border: 1px solid #3a0a0a; }
+.alert-icon.warning  { color: #f59e0b; background: #1a1000; border: 1px solid #3a2000; }
+.alert-icon.info     { color: #38d4f0; background: #041520; border: 1px solid #0a3a52; }
+.alert-copy strong { color: #8ab8d4; }
+.alert-copy small { color: #3a5a6a; }
+.alert-copy em { color: #2a4050; }
+.alert-footer { background: #0d1829; border-color: #1e3048; color: var(--cyan); }
+.alert-row > svg { color: #2a4060; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.icon-button { background: #0d1829; border-color: #1e3048; color: #5a8aa8; }
+.icon-button:hover { border-color: #08a6d1; color: #38d4f0; }
+.text-button { color: var(--cyan); background: transparent; }
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+.footer { color: #2a4060; }
+.footer strong { color: #3a6080; }
+
+/* ── Inputs (upload, form fields) ────────────────────────────────────────── */
+input[type="text"], input[type="email"], input[type="password"], input[type="search"],
+select, textarea {
+  background: #0d1829;
+  border-color: #1e3048;
+  color: #b0cce0;
+}
+input::placeholder, textarea::placeholder { color: #2a4560; }
+input:focus, select:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px #08a6d120; outline: none; }
+select option { background: #0d1829; color: #b0cce0; }
+
+/* ── Map panel (dashboard static map) ────────────────────────────────────── */
+.map-panel { background: #06111e; }
+.map-art { background-image:
+  linear-gradient(25deg, transparent 47%, #0a2030 48%, #0a2030 49%, transparent 50%),
+  linear-gradient(122deg, transparent 49%, #0c2535 50%, transparent 51%),
+  linear-gradient(12deg, transparent 65%, #0e2a3a 66%, transparent 67%); }
+.road { background: #0a3a50; }
+.map-search { background: #0d1829; color: #3a6080; box-shadow: 0 2px 8px #00000050; }
+.map-search input { color: #7aa0b8; }
+.map-legend { background: #0d1829ee; color: #3a6080; }
+.map-label { color: #1e4a60; }
+
+/* ── City Map (Leaflet) ──────────────────────────────────────────────────── */
+.city-map-panel { background: #131f2e; border-color: #1e3048; }
+.city-map-toolbar { border-bottom-color: #1e3048; }
+.city-map-toolbar button { background: #0d1829; border-color: #1e3048; color: #5a8aa8; }
+.city-map-toolbar button:hover { border-color: #08a6d1; color: #38d4f0; }
+.city-map-toolbar button.active { border-color: #08a6d1; background: #0d2a3d; color: #38d4f0; }
+.city-map-status { color: #2a4a60; border-top-color: #1e3048; }
+.city-map-container .leaflet-container { background: #06111e; }
+/* Dark tile overlay for OpenStreetMap tiles */
+.city-map-container .leaflet-tile-pane { filter: brightness(0.55) saturate(0.4) hue-rotate(185deg); }
+
+/* ── Video upload panel ───────────────────────────────────────────────────── */
+.upload-zone-active { border-color: var(--cyan) !important; background: #041520 !important; }
+
+/* ── Chart bars (traffic analytics) ─────────────────────────────────────── */
+.gridlines i { border-top-color: #1e3048; }
+
+/* ── NL Query chips ───────────────────────────────────────────────────────── */
+.nl-chip { background: #0d1829 !important; border-color: #1e3048 !important; color: #4a6e88 !important; }
+.nl-chip:hover { background: #08a6d1 !important; color: white !important; border-color: #08a6d1 !important; }
+
+/* ── Scrollbars (webkit) ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0d1520; }
+::-webkit-scrollbar-thumb { background: #1e3048; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #08a6d155; }
+
+/* ── Traffic status indicator enhancements ───────────────────────────────── */
+.cam-dot.low    { background: #10b981; box-shadow: 0 0 6px #10b98166; }
+.cam-dot.medium { background: #f59e0b; box-shadow: 0 0 6px #f59e0b66; }
+.cam-dot.high   { background: #f97316; box-shadow: 0 0 6px #f9731666; }
+.cam-dot.severe { background: #ef4444; box-shadow: 0 0 6px #ef444466; }
+.cam-dot.default{ background: #08a6d1; box-shadow: 0 0 6px #08a6d166; }
+
+/* ── Landing/Login pages — keep dark (no change needed, already dark) ────── */
+/* The landing and login pages are already on dark background (#080f1c / #060d18)
+   and do not use the --background / --card CSS variables, so they are unaffected
+   by the theme change above. */
