@@ -143,3 +143,34 @@ BLACKLIST_MIN_TIER_FOR_ALERT = "MEDIUM"   # "HIGH" | "MEDIUM"
 # How many consecutive frames a vehicle must be tracked without any plate
 # detection before a COMPLIANCE_ANOMALY alert is considered.
 COMPLIANCE_ANOMALY_MIN_FRAMES_WITHOUT_PLATE = 3
+
+# ── Demo: Synthetic multi-camera simulation ───────────────────────────────────
+#
+# DEMO_MODE_SYNTHETIC_CAMERAS = True
+#   Enables deterministic assignment of different camera_ids to detections
+#   from a single video source, so cross-camera trajectory reconstruction
+#   and GIS plotting can be demonstrated without physical multi-camera hardware.
+#
+#   WHAT IS REAL:    vehicle detections, plate text, OCR confidence, timestamps
+#   WHAT IS SYNTHETIC: the camera_id (and therefore GPS) assigned per detection
+#
+#   This flag MUST be disclosed in demo/presentation context.
+#   Flip to False (or remove) when real multi-camera feeds are available.
+#
+# DEMO_CAMERA_SEQUENCE
+#   Ordered list of camera_ids that are cycled through across tracks.
+#   Track T0001 → sequence[0], T0002 → sequence[1], ... wraps around.
+#   All camera_ids listed here MUST exist in the trajectory_cameras table
+#   (seeded by seed_trajectory.py) — FK violation otherwise.
+#
+DEMO_MODE_SYNTHETIC_CAMERAS = True
+
+DEMO_CAMERA_SEQUENCE = [
+    "CAM_001",   # Ameerpet Junction        (17.4375, 78.4483)
+    "CAM_002",   # Begumpet Junction        (17.4432, 78.4556)
+    "CAM_006",   # Madhapur Flyover         (17.4489, 78.3908)
+    "CAM_014",   # Paradise Circle          (17.4480, 78.4980)
+]
+# Four cameras covering a realistic ~8 km urban corridor in Hyderabad.
+# Spacing is 1.5–5 km, travel times at city speeds (30–50 km/h) produce
+# NORMAL or FAST hop classifications — visually convincing for the demo.

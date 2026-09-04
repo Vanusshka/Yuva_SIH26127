@@ -805,11 +805,16 @@ async def process_image_p7(
     summary="Upload a traffic video → sampled frame ANPR pipeline → structured JSON",
 )
 async def process_video_p7(
-    file        : UploadFile    = File(...,  description="Traffic video (MP4/AVI/MOV/MKV)"),
-    camera_id   : str           = Form(default="CAM_001", description="Camera ID"),
-    timestamp   : Optional[str] = Form(default=None,      description="ISO-8601 timestamp of first frame"),
-    frame_skip  : int           = Form(default=5,          description="Process every N-th frame (default 5). Lower=more detections, slower. Set to 2-3 for best ANPR results."),
-    db          : Session       = Depends(get_db),
+    file             : UploadFile    = File(...,  description="Traffic video (MP4/AVI/MOV/MKV)"),
+    camera_id        : str           = Form(default="CAM_001", description="Camera ID"),
+    timestamp        : Optional[str] = Form(default=None,      description="ISO-8601 timestamp of first frame"),
+    frame_skip       : int           = Form(default=5,          description="Process every N-th frame (default 5). Lower=more detections, slower. Set to 2-3 for best ANPR results."),
+    demo_multi_camera: bool          = Form(default=False,      description=(
+        "⚠ DEMO ONLY — assign detections to synthetic cameras from DEMO_CAMERA_SEQUENCE "
+        "(round-robin per tracked vehicle) so trajectory/GIS features can be demonstrated "
+        "from a single video source. Detection data is real; camera locations are synthetic."
+    )),
+    db               : Session       = Depends(get_db),
 ):
     """
     **Phase 7 video ingestion pipeline:**
@@ -852,6 +857,7 @@ async def process_video_p7(
             ts,
             frame_skip,
             db,
+            demo_multi_camera,
         )
     except ValueError as exc:
         _cleanup_upload(saved_path)

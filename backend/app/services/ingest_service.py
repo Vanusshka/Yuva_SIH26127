@@ -46,6 +46,8 @@ from app.config import (
     TWO_WHEELER_MIN_PLATE_W,
     TWO_WHEELER_PLATE_UPSCALE,
     COMPLIANCE_ANOMALY_MIN_FRAMES_WITHOUT_PLATE,
+    DEMO_MODE_SYNTHETIC_CAMERAS,
+    DEMO_CAMERA_SEQUENCE,
     get_vehicle_category,
 )
 from app.models.vehicle_detector import VehicleDetector, VehicleDetection
@@ -490,6 +492,38 @@ def _check_compliance_anomalies(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# DEMO: Synthetic multi-camera assignment
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _resolve_demo_camera(
+    track_id        : str,
+    default_camera  : str,
+    track_index     : int,
+) -> str:
+    """
+    ⚠️  SYNTHETIC CAMERA ASSIGNMENT — DEMO USE ONLY ⚠️
+
+    Deterministically maps a track to one of the cameras in
+    DEMO_CAMERA_SEQUENCE so that a single-source video produces detections
+    spread across multiple camera_ids, enabling trajectory reconstruction
+    and GIS plotting without real multi-camera hardware.
+
+    WHAT IS REAL    : vehicle bboxes, plate text, OCR confidence, timestamps
+    WHAT IS SYNTHETIC: the camera_id (and therefore GPS location) returned here
+
+    Assignment rule: round-robin by track_index (0-based order of first
+    appearance). Track 0 → sequence[0], track 1 → sequence[1], etc.
+    Wraps when len(tracks) > len(sequence).
+
+    Remove/replace this function when real multi-camera feeds are available.
+    Controlled by DEMO_MODE_SYNTHETIC_CAMERAS in config.py.
+    """
+    if not DEMO_MODE_SYNTHETIC_CAMERAS or not DEMO_CAMERA_SEQUENCE:
+        return default_camera
+    return DEMO_CAMERA_SEQUENCE[track_index % len(DEMO_CAMERA_SEQUENCE)]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # IMAGE INGESTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -567,12 +601,23 @@ def ingest_image(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def ingest_video(
-    video_path    : Path,
-    camera_id     : str,
-    base_timestamp: Optional[datetime] = None,
-    frame_skip    : int                = 5,
-    db            : Optional[Session]  = None,
+    video_path      : Path,
+    camera_id       : str,
+    base_timestamp  : Optional[datetime] = None,
+    frame_skip      : int                = 5,
+    db              : Optional[Session]  = None,
+    demo_multi_camera: bool              = False,
 ) -> VideoIngestResponse:
+    """
+    Ingest a traffic video through the full ANPR pipeline.
+
+    demo_multi_camera=True (requires DEMO_MODE_SYNTHETIC_CAMERAS=True in config):
+        Assigns different camera_ids from DEMO_CAMERA_SEQUENCE to each tracked
+        vehicle, so a single video produces detections that span multiple synthetic
+        camera locations.  This enables trajectory reconstruction and GIS plotting
+        without real multi-camera hardware.
+        ⚠️  SYNTHETIC — disclose in demo context.
+    """
     if base_timestamp is None:
         base_timestamp = datetime.now(timezone.utc)
 
@@ -626,10 +671,13 @@ def ingest_video(
     # evidence for each tracked vehicle.
     all_detections: List[IngestDetection] = []
 
-    # Group stored frames by track_id
+    # Group stored frames by track_id — preserve insertion order (first-seen)
     from collections import defaultdict as _dd
     track_frames: Dict[str, list] = _dd(list)
+    track_order : Dict[str, int]  = {}   # track_id → 0-based index of first appearance
     for track_id, vehicle, plate, ocr, fn, frame_ts in frame_store:
+        if track_id not in track_order:
+            track_order[track_id] = len(track_order)
         track_frames[track_id].append((vehicle, plate, ocr, fn, frame_ts))
 
     for track_id, frames in track_frames.items():
@@ -644,9 +692,22 @@ def ingest_video(
         best_frame = max(frames, key=_frame_score)
         vehicle, plate, ocr, fn, frame_ts = best_frame
 
+        # ── DEMO: synthetic camera assignment ─────────────────────────────────
+        # When demo_multi_camera is enabled each track gets a different camera_id
+        # from DEMO_CAMERA_SEQUENCE (round-robin by track appearance order).
+        # WHAT IS REAL: detection data (plate, confidence, bbox, timestamp)
+        # WHAT IS SYNTHETIC: the camera_id and its GPS location
+        # Remove / replace with real camera routing when live feeds are available.
+        effective_camera = _resolve_demo_camera(
+            track_id       = track_id,
+            default_camera = camera_id,
+            track_index    = track_order[track_id] if demo_multi_camera else 0,
+        ) if demo_multi_camera else camera_id
+        eff_lat, eff_lon = get_camera_gps(effective_camera)
+
         det = _build_ingest_detection(
             track_id, vehicle, plate, ocr, final,
-            fn, frame_ts, camera_id, lat, lon, video_path.name, db,
+            fn, frame_ts, effective_camera, eff_lat, eff_lon, video_path.name, db,
         )
         all_detections.append(det)
 
@@ -667,6 +728,17 @@ def ingest_video(
     unreadable_count = sum(1 for d in all_detections
                            if d.plate_status == PlateStatus.UNREADABLE.value)
 
+    # Build processing note — flag synthetic camera mode clearly
+    demo_note = ""
+    if demo_multi_camera and DEMO_MODE_SYNTHETIC_CAMERAS:
+        cams_used = sorted({d.camera_id for d in all_detections})
+        demo_note = (
+            f" ⚠ DEMO MODE: synthetic camera assignment active — "
+            f"camera_ids {cams_used} are simulated, not real hardware. "
+            f"Detection data (plates, confidence, timestamps) is real."
+        )
+        logger.info("[Ingest] Demo multi-camera active — cameras used: %s", cams_used)
+
     return VideoIngestResponse(
         status="ok", source_file=video_path.name, camera_id=camera_id,
         total_frames=total_frames, frames_processed=frames_processed,
@@ -679,5 +751,6 @@ def ingest_video(
             f"Frame skip={frame_skip}. Verified plates from real multi-frame OCR evidence. "
             f"LOW-confidence reads sent to manual review queue. "
             f"Compliance anomalies stored for alert engine."
+            + demo_note
         ),
     )
