@@ -75,7 +75,7 @@ PLATE_CONF_THRESH = 0.30
 # ── OCR ───────────────────────────────────────────────────────────────────────
 # Switch to "paddleocr" to use the fine-tuned SVTR_LCNet recognizer.
 # Switch to "easyocr" or "tesseract" for the generic fallbacks.
-OCR_ENGINE           = "easyocr"   # flip to "paddleocr" only after deployment verification
+OCR_ENGINE           = "paddleocr"  # fine-tuned SVTR_LCNet — paddleocr_infer/ verified on disk
 OCR_LANGUAGES        = ["en"]
 
 # ── PaddleOCR fine-tuned recognizer paths ────────────────────────────────────
