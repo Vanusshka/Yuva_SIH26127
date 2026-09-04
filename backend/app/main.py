@@ -753,10 +753,11 @@ def reload_metadata_caches():
     summary="Upload a traffic image → full ANPR pipeline → structured JSON",
 )
 async def process_image_p7(
-    file       : UploadFile    = File(...,  description="Traffic image (JPEG/PNG/BMP/WebP)"),
-    camera_id  : str           = Form(default="CAM_001", description="Camera ID (from cameras.json)"),
-    timestamp  : Optional[str] = Form(default=None,      description="ISO-8601 timestamp (defaults to UTC now)"),
-    db         : Session       = Depends(get_db),
+    file         : UploadFile    = File(...,  description="Traffic image (JPEG/PNG/BMP/WebP)"),
+    camera_id    : str           = Form(default="CAM_001", description="Camera ID (from cameras.json)"),
+    timestamp    : Optional[str] = Form(default=None,      description="ISO-8601 timestamp (defaults to UTC now)"),
+    privacy_mode : bool          = Form(default=True,       description="Blur face regions before detection. Default: True (recommended for all deployments)."),
+    db           : Session       = Depends(get_db),
 ):
     """
     **Phase 7 ingestion pipeline for a single image:**
@@ -789,10 +790,11 @@ async def process_image_p7(
     saved_path = await save_upload(file)
     try:
         result = ingest_image(
-            image_path = saved_path,
-            camera_id  = camera_id,
-            timestamp  = ts,
-            db         = db,
+            image_path   = saved_path,
+            camera_id    = camera_id,
+            timestamp    = ts,
+            db           = db,
+            privacy_mode = privacy_mode,
         )
     except ValueError as exc:
         _cleanup_upload(saved_path)
@@ -821,6 +823,10 @@ async def process_video_p7(
         "⚠ DEMO ONLY — assign detections to synthetic cameras from DEMO_CAMERA_SEQUENCE "
         "(round-robin per tracked vehicle) so trajectory/GIS features can be demonstrated "
         "from a single video source. Detection data is real; camera locations are synthetic."
+    )),
+    privacy_mode     : bool          = Form(default=True,       description=(
+        "Blur detected face regions on every frame BEFORE plate detection runs. "
+        "Recommended True for all real deployments. Default: PRIVACY_MODE from config."
     )),
     db               : Session       = Depends(get_db),
 ):
@@ -866,6 +872,7 @@ async def process_video_p7(
             frame_skip,
             db,
             demo_multi_camera,
+            privacy_mode,
         )
     except ValueError as exc:
         _cleanup_upload(saved_path)
@@ -1723,3 +1730,85 @@ def natural_language_query(
     except Exception as exc:
         logger.error("[NLQuery] Unexpected error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Query processing error: {exc}") from exc
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PRIVACY POLICY  (GET /privacy)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.get(
+    "/privacy",
+    tags    = ["System"],
+    summary = "Machine-readable data-handling and privacy policy for this deployment",
+)
+def privacy_policy():
+    """
+    **SIH26127 UrbanEye AI — Data Handling & Privacy Policy**
+
+    Returns a machine-readable JSON document describing what data is collected,
+    how it is stored, who can access it, and the retention policy.
+
+    Relevant legislation:
+    - Information Technology (Amendment) Act 2008
+    - Draft Digital Personal Data Protection Act 2023 (India)
+    - MeitY AI Governance Guidelines
+
+    This endpoint exists to demonstrate that the system has been designed with
+    privacy-by-design principles — a differentiator for city-scale CCTV AI
+    deployments where data protection is a real regulatory requirement.
+    """
+    from app.config import PRIVACY_MODE
+    from datetime import date
+
+    return {
+        "system"          : "UrbanEye AI — SIH26127 ANPR Backend",
+        "version"         : "0.8.0",
+        "policy_date"     : str(date.today()),
+        "contact"         : "sih26127-urbaneyeai@example.com",
+
+        "data_collected": {
+            "plate_text"          : "Detected license plate strings (OCR output)",
+            "vehicle_type"        : "Vehicle class (car/motorcycle/bus/truck/auto_rickshaw/bicycle)",
+            "detection_confidence": "OCR and detection confidence scores (0.0–1.0)",
+            "camera_id"           : "Identifier of the camera that captured the detection",
+            "timestamp"           : "UTC timestamp of each detection event",
+            "bounding_boxes"      : "Pixel coordinates of vehicle and plate regions",
+        },
+
+        "data_NOT_collected": {
+            "raw_video_frames"  : "Video frames are processed in-memory and immediately discarded. No raw frames are persisted to disk.",
+            "driver_identity"   : "No driver or passenger face data is stored.",
+            "vehicle_owner_info": "No ownership or registration database is queried.",
+            "location_tracking" : "GPS coordinates are fixed camera locations — not tracked from vehicles.",
+        },
+
+        "privacy_mode": {
+            "enabled"    : PRIVACY_MODE,
+            "description": (
+                "When privacy_mode=True, OpenCV Haar cascade face detection runs on every "
+                "frame BEFORE plate detection. Detected face regions are Gaussian-blurred "
+                "in-memory before any output image is generated. "
+                "This ensures no face data enters stored annotated images or debug crops."
+            ),
+            "implementation": "backend/app/utils/image_utils.py — blur_faces(), redact_frame()",
+        },
+
+        "data_retention": {
+            "detection_events"  : "Stored in local SQLite DB. No automatic expiry (operator-configured).",
+            "annotated_images"  : "Stored in data/output/. Recommend purging after 30 days.",
+            "manual_review_items": "Stored until reviewed and closed by an operator.",
+            "audit_logs"        : "Standard FastAPI access logs — not persisted by this system.",
+        },
+
+        "access_control": {
+            "current"   : "Single-instance local deployment — network-level access control required.",
+            "recommended": "Deploy behind an authenticated reverse proxy (nginx + OAuth2/JWT).",
+        },
+
+        "legal_basis"    : "Law enforcement / public safety under IT Act 2008, Section 69. Data processed by authorised municipal/traffic authorities only.",
+        "demo_disclaimer": (
+            "This deployment is a SIH2026 competition prototype. "
+            "All detection data in the current DB is from test videos, not real CCTV feeds. "
+            "Blacklist entries are entirely fictitious."
+        ),
+    }

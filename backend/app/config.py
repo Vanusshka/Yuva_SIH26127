@@ -144,7 +144,41 @@ BLACKLIST_MIN_TIER_FOR_ALERT = "MEDIUM"   # "HIGH" | "MEDIUM"
 # detection before a COMPLIANCE_ANOMALY alert is considered.
 COMPLIANCE_ANOMALY_MIN_FRAMES_WITHOUT_PLATE = 3
 
-# ── Demo: Synthetic multi-camera simulation ───────────────────────────────────
+# ── Privacy / redaction mode ──────────────────────────────────────────────────
+#
+# PRIVACY_MODE = True
+#   When enabled, every frame is passed through blur_faces() (OpenCV Haar
+#   cascade) before OCR and plate detection run. This ensures no face data
+#   is present in annotated output images or debug crops.
+#
+#   WHAT IS BLURRED : face regions detected by the Haar cascade
+#   WHAT IS NOT BLURRED: license plate regions (these are the detection target)
+#   SIDE EFFECT     : ~5–15 ms per frame on CPU (Haar cascade is fast)
+#
+#   Set False in development to skip the blur step and save processing time.
+#   Set True for any public demo or real deployment.
+#
+PRIVACY_MODE = True
+
+# Minimum face detection confidence for the Haar cascade (scaleFactor).
+# 1.05 = very sensitive (more detections, more false positives)
+# 1.3  = less sensitive (fewer false positives, may miss small/angled faces)
+PRIVACY_FACE_SCALE_FACTOR = 1.1
+PRIVACY_FACE_MIN_NEIGHBORS = 4
+PRIVACY_FACE_MIN_SIZE      = (30, 30)   # pixels — ignore tiny detections
+
+# ── Speed limit / overspeeding alerts ────────────────────────────────────────
+#
+# Default speed limit used for the inter-camera overspeeding alert.
+# A hop between two cameras is flagged as OVERSPEEDING when the inferred
+# average speed (Haversine distance / travel time) exceeds this threshold.
+#
+# Set per Indian urban road standards:
+#   Urban arterial roads : 50–60 km/h
+#   Residential/signals  : 30–40 km/h
+#   Expressways          : 80–100 km/h
+#
+SPEED_LIMIT_KMPH = 60.0   # default: urban arterial road limit
 #
 # DEMO_MODE_SYNTHETIC_CAMERAS = True
 #   Enables deterministic assignment of different camera_ids to detections

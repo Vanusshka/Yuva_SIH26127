@@ -48,6 +48,10 @@ from app.config import (
     COMPLIANCE_ANOMALY_MIN_FRAMES_WITHOUT_PLATE,
     DEMO_MODE_SYNTHETIC_CAMERAS,
     DEMO_CAMERA_SEQUENCE,
+    PRIVACY_MODE,
+    PRIVACY_FACE_SCALE_FACTOR,
+    PRIVACY_FACE_MIN_NEIGHBORS,
+    PRIVACY_FACE_MIN_SIZE,
     get_vehicle_category,
 )
 from app.models.vehicle_detector import VehicleDetector, VehicleDetection
@@ -62,7 +66,7 @@ from app.services.event_service     import create_event
 from app.services.detection_service import create_detection
 from app.schemas.trajectory         import DetectionCreate
 from app.schemas.ingest             import IngestDetection, ImageIngestResponse, VideoIngestResponse
-from app.utils.image_utils          import load_image, annotate_image, save_image
+from app.utils.image_utils          import load_image, annotate_image, save_image, blur_faces
 from app.utils.metadata_loader      import get_camera_gps, get_camera_meta
 
 logger = logging.getLogger(__name__)
@@ -212,12 +216,27 @@ def _detect_frame(
     frame_number : int,
     tracker      : _SimpleTracker,
     evidence_map : Dict[str, PlateEvidence],
+    privacy_mode : bool = False,
 ) -> List[Tuple[str, VehicleDetection, Optional[PlateDetection], Optional[OCRResult], ConsensuResult]]:
     """
     Run full detection pipeline on one frame.
     Change 1: two-wheelers use a lower confidence threshold.
     Change 9: tracker.increment_no_plate() called when no plate found.
+    Privacy: when privacy_mode=True, face regions are blurred BEFORE
+             vehicle/plate detection runs — no face data enters any output.
     """
+    # ── Privacy: blur faces before any detection ──────────────────────────────
+    if privacy_mode:
+        image, n_faces = blur_faces(
+            image,
+            scale_factor  = PRIVACY_FACE_SCALE_FACTOR,
+            min_neighbors = PRIVACY_FACE_MIN_NEIGHBORS,
+            min_size      = PRIVACY_FACE_MIN_SIZE,
+        )
+        if n_faces:
+            logger.debug("[Ingest] Privacy: blurred %d face(s) in frame %d",
+                         n_faces, frame_number)
+
     # ── Vehicle detection ─────────────────────────────────────────────────────
     try:
         # Standard detection pass
@@ -528,10 +547,11 @@ def _resolve_demo_camera(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def ingest_image(
-    image_path : Path,
-    camera_id  : str,
-    timestamp  : Optional[datetime] = None,
-    db         : Optional[Session]  = None,
+    image_path   : Path,
+    camera_id    : str,
+    timestamp    : Optional[datetime] = None,
+    db           : Optional[Session]  = None,
+    privacy_mode : bool               = PRIVACY_MODE,
 ) -> ImageIngestResponse:
     if timestamp is None:
         timestamp = datetime.now(timezone.utc)
@@ -540,6 +560,8 @@ def ingest_image(
     warnings  : List[str] = []
     if get_camera_meta(camera_id) is None:
         warnings.append(f"camera_id '{camera_id}' not in cameras.json — GPS defaulted")
+    if privacy_mode:
+        warnings.append("privacy_mode=True: face regions blurred before detection.")
 
     try:
         image = load_image(image_path)
@@ -549,7 +571,7 @@ def ingest_image(
     tracker      = _SimpleTracker()
     evidence_map : Dict[str, PlateEvidence] = {}
 
-    frame_data = _detect_frame(image, 0, tracker, evidence_map)
+    frame_data = _detect_frame(image, 0, tracker, evidence_map, privacy_mode=privacy_mode)
 
     detections: List[IngestDetection] = []
     for track_id, vehicle, plate, ocr, _ in frame_data:
@@ -601,12 +623,13 @@ def ingest_image(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def ingest_video(
-    video_path      : Path,
-    camera_id       : str,
-    base_timestamp  : Optional[datetime] = None,
-    frame_skip      : int                = 5,
-    db              : Optional[Session]  = None,
-    demo_multi_camera: bool              = False,
+    video_path        : Path,
+    camera_id         : str,
+    base_timestamp    : Optional[datetime] = None,
+    frame_skip        : int                = 5,
+    db                : Optional[Session]  = None,
+    demo_multi_camera : bool               = False,
+    privacy_mode      : bool               = PRIVACY_MODE,
 ) -> VideoIngestResponse:
     """
     Ingest a traffic video through the full ANPR pipeline.
@@ -617,6 +640,9 @@ def ingest_video(
         camera locations.  This enables trajectory reconstruction and GIS plotting
         without real multi-camera hardware.
         ⚠️  SYNTHETIC — disclose in demo context.
+    privacy_mode=True (default: PRIVACY_MODE from config):
+        Face regions are blurred on every sampled frame BEFORE vehicle/plate
+        detection runs. No face data enters stored output or debug images.
     """
     if base_timestamp is None:
         base_timestamp = datetime.now(timezone.utc)
@@ -626,6 +652,8 @@ def ingest_video(
     warnings  : List[str] = []
     if get_camera_meta(camera_id) is None:
         warnings.append(f"camera_id '{camera_id}' not in cameras.json — GPS defaulted")
+    if privacy_mode:
+        warnings.append("privacy_mode=True: face regions blurred on every frame before detection.")
 
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
@@ -652,7 +680,7 @@ def ingest_video(
                 break
             if frame_idx % frame_skip == 0:
                 frame_ts   = base_timestamp + timedelta(seconds=frame_idx / fps)
-                frame_data = _detect_frame(frame, frame_idx, tracker, evidence_map)
+                frame_data = _detect_frame(frame, frame_idx, tracker, evidence_map, privacy_mode=privacy_mode)
                 for track_id, vehicle, plate, ocr, _ in frame_data:
                     frame_store.append((track_id, vehicle, plate, ocr, frame_idx, frame_ts))
                 frames_processed += 1

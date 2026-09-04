@@ -31,6 +31,7 @@ from app.services.analytics_service import get_traffic_density
 from app.trajectory.engine import reconstruct
 from app.trajectory.anomaly import MovementStatus
 from app.utils.metadata_loader import is_blacklisted
+from app.config import SPEED_LIMIT_KMPH
 
 logger = logging.getLogger(__name__)
 
@@ -371,6 +372,93 @@ def _compliance_anomaly_alerts(db: Session) -> List[CombinedAlertItem]:
 
 
 # --------------------------------------------------------------------------- #
+#  Overspeeding alerts  (speed estimation between cameras)                    #
+# --------------------------------------------------------------------------- #
+
+_speed_cache: dict = {"ts": None, "result": []}
+_SPEED_CACHE_TTL = 300  # seconds — same cadence as trajectory cache
+
+def _overspeeding_alerts(db: Session) -> List[CombinedAlertItem]:
+    """
+    Flag vehicles whose inferred inter-camera speed exceeds SPEED_LIMIT_KMPH.
+
+    Method:
+      1. Find plates seen at >= 2 distinct cameras in last 24 h (same fast SQL
+         filter used by trajectory anomaly alerts — no extra query cost).
+      2. For each candidate: call reconstruct() to get hop-level speed data.
+      3. Any hop where average_speed_kmh > SPEED_LIMIT_KMPH fires an
+         OVERSPEEDING alert with plate, cameras, inferred speed, and distance.
+
+    This turns the existing trajectory engine output into a concrete
+    overspeeding detection system — no new computation beyond the hop
+    metrics already calculated by _build_trajectory().
+
+    Cached for 5 minutes (same as trajectory anomaly cache) to prevent
+    repeated reconstruct() calls during frontend polling.
+    """
+    import time
+    global _speed_cache
+    now_ts = time.monotonic()
+    if _speed_cache["ts"] is not None and (now_ts - _speed_cache["ts"]) < _SPEED_CACHE_TTL:
+        return list(_speed_cache["result"])
+
+    alerts: List[CombinedAlertItem] = []
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+
+    multi_cam_plates = (
+        db.query(Detection.plate_number)
+          .filter(Detection.timestamp >= cutoff)
+          .group_by(Detection.plate_number)
+          .having(func.count(func.distinct(Detection.camera_id)) >= 2)
+          .all()
+    )
+
+    for (plate,) in multi_cam_plates[:10]:
+        try:
+            traj = reconstruct(db, plate)
+        except Exception:
+            continue
+
+        for hop in traj.hops:
+            if hop.average_speed_kmh <= SPEED_LIMIT_KMPH:
+                continue
+
+            # Determine severity: >2× limit = CRITICAL, else WARNING
+            severity = "CRITICAL" if hop.average_speed_kmh > SPEED_LIMIT_KMPH * 2 else "WARNING"
+            ts = hop.to_timestamp or datetime.now(timezone.utc)
+
+            alerts.append(CombinedAlertItem(
+                alert_type   = "OVERSPEEDING",
+                severity     = severity,
+                camera_id    = hop.to_camera_id,
+                plate_number = plate,
+                message      = (
+                    f"Overspeeding: {plate} inferred at "
+                    f"{hop.average_speed_kmh:.1f} km/h between "
+                    f"{hop.from_camera_id} and {hop.to_camera_id} "
+                    f"({hop.distance_km:.2f} km in "
+                    f"{hop.time_difference_minutes:.1f} min). "
+                    f"Limit: {SPEED_LIMIT_KMPH:.0f} km/h."
+                ),
+                timestamp    = ts,
+                demo_data    = False,
+                metadata     = {
+                    "from_camera"       : hop.from_camera_id,
+                    "to_camera"         : hop.to_camera_id,
+                    "inferred_speed_kmh": round(hop.average_speed_kmh, 2),
+                    "speed_limit_kmph"  : SPEED_LIMIT_KMPH,
+                    "distance_km"       : hop.distance_km,
+                    "duration_min"      : hop.time_difference_minutes,
+                    "method"            : "inter_camera_haversine / travel_time",
+                },
+            ))
+
+    _speed_cache["ts"]     = now_ts
+    _speed_cache["result"] = list(alerts)
+    return alerts
+
+
+# --------------------------------------------------------------------------- #
 #  Public API                                                                  #
 # --------------------------------------------------------------------------- #
 
@@ -381,11 +469,12 @@ def get_combined_alerts(db: Session, limit: int = 50) -> CombinedAlertsResponse:
     all_alerts: List[CombinedAlertItem] = []
 
     generators = [
-        ("blacklist",   _blacklist_alerts),
-        ("congestion",  _congestion_alerts),
-        ("trajectory",  _trajectory_anomaly_alerts),
-        ("frequent",    _frequent_sightings_alerts),
-        ("compliance",  _compliance_anomaly_alerts),
+        ("blacklist",    _blacklist_alerts),
+        ("congestion",   _congestion_alerts),
+        ("trajectory",   _trajectory_anomaly_alerts),
+        ("overspeeding", _overspeeding_alerts),
+        ("frequent",     _frequent_sightings_alerts),
+        ("compliance",   _compliance_anomaly_alerts),
     ]
 
     for name, fn in generators:
