@@ -85,7 +85,7 @@ OCR_LANGUAGES        = ["en"]
 #                        (inference.pdiparams + inference.json inside).
 # PADDLE_CHAR_DICT_PATH: character dictionary used during training.
 PADDLEOCR_REPO_DIR    = MODELS_DIR / "paddleocr_infer"
-PADDLE_REC_MODEL_DIR  = MODELS_DIR / "plates_inference_model_v2"
+PADDLE_REC_MODEL_DIR  = MODELS_DIR / "plates_inference_model_final"
 PADDLE_CHAR_DICT_PATH = PADDLEOCR_REPO_DIR / "ppocr" / "utils" / "en_dict.txt"
 
 # ── API ───────────────────────────────────────────────────────────────────────
