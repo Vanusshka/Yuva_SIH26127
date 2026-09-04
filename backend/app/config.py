@@ -64,7 +64,7 @@ def get_vehicle_category(vehicle_class: str) -> str:
 
 
 # ── Plate Detection ───────────────────────────────────────────────────────────
-PLATE_MODEL_NAME     = "license_plate_detector.pt"
+PLATE_MODEL_NAME     = "plate_detector_best_fast.pt"
 PLATE_MODEL_URL      = (
     "https://huggingface.co/Koushim/yolov8-license-plate-detection/resolve/main/best.pt"
 )
