@@ -18,7 +18,6 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
-import urllib.request
 
 import cv2
 import numpy as np
@@ -32,16 +31,8 @@ from app.config import (
 
 logger = logging.getLogger(__name__)
 
-# ── Download sources (tried in order) ────────────────────────────────────────
-_PLATE_MODEL_URLS: List[str] = [
-    "https://huggingface.co/Koushim/yolov8-license-plate-detection/resolve/main/best.pt",
-    "https://huggingface.co/rebotnix/rb_licenseplate/resolve/main/best.pt",
-]
-
 # ── Padding fraction applied to every detected bbox ─────────────────────────
-# 0.08 = add 8 % of the box width/height on each side.
-# Prevents edge characters being cropped out.
-PLATE_BBOX_PAD_FRAC: float = 0.10   # configurable; keep 0.05–0.20
+PLATE_BBOX_PAD_FRAC: float = 0.10
 
 
 @dataclass
@@ -55,21 +46,6 @@ class PlateDetection:
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
-
-def _try_download_model(dest: Path) -> bool:
-    for url in _PLATE_MODEL_URLS:
-        try:
-            logger.info("[PlateDetector] Trying %s ...", url)
-            urllib.request.urlretrieve(url, str(dest))
-            size = dest.stat().st_size
-            if size > 100_000:
-                logger.info("[PlateDetector] Downloaded OK (%d bytes)", size)
-                return True
-            dest.unlink(missing_ok=True)
-            logger.warning("[PlateDetector] Too small (%d bytes) — skipping", size)
-        except Exception as exc:
-            logger.warning("[PlateDetector] Download failed: %s", exc)
-    return False
 
 
 def _pad_bbox(
@@ -248,7 +224,10 @@ class PlateDetector:
 
         model_path = MODELS_DIR / PLATE_MODEL_NAME
         if not model_path.exists():
-            _try_download_model(model_path)
+            logger.error(
+                "[PlateDetector] Model file not found: %s — falling back to contour detector",
+                model_path,
+            )
 
         if model_path.exists() and model_path.stat().st_size > 100_000:
             try:

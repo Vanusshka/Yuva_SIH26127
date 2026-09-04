@@ -23,24 +23,26 @@ DATABASE_URL = f"sqlite:///{DATA_DIR / 'traffic.db'}"
 VEHICLE_MODEL_NAME   = "best.pt"
 VEHICLE_CONF_THRESH  = 0.40
 
-# COCO class IDs recognised by YOLOv8n
-# Change 1: classes now carry a "category" tag so downstream code can
-# apply different handling for two-wheelers vs cars/commercial vehicles.
-VEHICLE_CLASS_IDS    = {2: "car", 3: "motorcycle", 5: "bus", 7: "truck"}
+# Class indices for the trained 6-class vehicle detector (best.pt).
+# These are NOT COCO indices — they are the model's own 0-based indices
+# matching the order used during training:
+#   0=car, 1=motorcycle, 2=auto_rickshaw, 3=bus, 4=truck, 5=bicycle
+VEHICLE_CLASS_IDS = {
+    0: "car",
+    1: "motorcycle",
+    2: "auto_rickshaw",
+    3: "bus",
+    4: "truck",
+    5: "bicycle",
+}
 
-# Change 1 — Vehicle category groupings
-# TWO_WHEELER_CLASSES   : smaller vehicles, may need lower conf or upscale on plate crop
-# CAR_COMMERCIAL_CLASSES: cars, buses, trucks
-TWO_WHEELER_CLASSES     = {3}          # motorcycle / scooter (COCO id 3)
-CAR_COMMERCIAL_CLASSES  = {2, 5, 7}   # car, bus, truck
+# Vehicle category groupings (used for two-wheeler plate upscaling etc.)
+TWO_WHEELER_CLASSES     = {1, 5}       # motorcycle, bicycle
+CAR_COMMERCIAL_CLASSES  = {0, 2, 3, 4} # car, auto_rickshaw, bus, truck
 
 # Two-wheeler specific detection parameters
-# Lower confidence threshold lets us pick up distant/oblique two-wheelers
-# that would otherwise be missed at the standard 0.40 threshold.
-TWO_WHEELER_CONF_THRESH = 0.30         # configurable; lower = more sensitive
-# Minimum plate crop size before upscaling for two-wheelers (pixels)
-TWO_WHEELER_MIN_PLATE_W = 40
-# Upscale factor applied to small two-wheeler plate crops before OCR
+TWO_WHEELER_CONF_THRESH   = 0.30
+TWO_WHEELER_MIN_PLATE_W   = 40
 TWO_WHEELER_PLATE_UPSCALE = 2.0
 
 
@@ -50,30 +52,30 @@ def get_vehicle_category(vehicle_class: str) -> str:
 
     Returns
     -------
-    "two_wheeler"     for motorcycle / scooter
+    "two_wheeler"     for motorcycle, bicycle
+    "three_wheeler"   for auto_rickshaw
     "car_commercial"  for car, bus, truck
     "unknown"         if class is not recognised
     """
     _MAP = {
-        "car":        "car_commercial",
-        "bus":        "car_commercial",
-        "truck":      "car_commercial",
-        "motorcycle": "two_wheeler",
+        "car"           : "car_commercial",
+        "bus"           : "car_commercial",
+        "truck"         : "car_commercial",
+        "motorcycle"    : "two_wheeler",
+        "bicycle"       : "two_wheeler",
+        "auto_rickshaw" : "three_wheeler",
     }
     return _MAP.get(vehicle_class.lower(), "unknown")
 
 
 # ── Plate Detection ───────────────────────────────────────────────────────────
-PLATE_MODEL_NAME     = "plate_detector_best_fast.pt"
-PLATE_MODEL_URL      = (
-    "https://huggingface.co/Koushim/yolov8-license-plate-detection/resolve/main/best.pt"
-)
-PLATE_CONF_THRESH    = 0.30
+PLATE_MODEL_NAME  = "plate_detector_best_fast.pt"   # trained model, mAP50 0.984
+PLATE_CONF_THRESH = 0.30
 
 # ── OCR ───────────────────────────────────────────────────────────────────────
 # Switch to "paddleocr" to use the fine-tuned SVTR_LCNet recognizer.
 # Switch to "easyocr" or "tesseract" for the generic fallbacks.
-OCR_ENGINE           = "paddleocr"
+OCR_ENGINE           = "easyocr"   # flip to "paddleocr" only after deployment verification
 OCR_LANGUAGES        = ["en"]
 
 # ── PaddleOCR fine-tuned recognizer paths ────────────────────────────────────
