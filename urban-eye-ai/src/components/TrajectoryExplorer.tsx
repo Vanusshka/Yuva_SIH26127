@@ -23,7 +23,7 @@ import { ApiError } from '@/lib/api'
 // Leaflet map — SSR-safe dynamic import
 const TrajectoryMap = dynamic(
   () => import('@/src/components/TrajectoryMap'),
-  { ssr: false, loading: () => <div style={{ height: 340, background: '#f0f6fb', borderRadius: 8, display: 'grid', placeItems: 'center', color: 'var(--muted-foreground)', fontSize: 12 }}>Loading map...</div> }
+  { ssr: false, loading: () => <div style={{ height: 340, background: 'var(--muted)', borderRadius: 8, display: 'grid', placeItems: 'center', color: 'var(--muted-foreground)', fontSize: 12 }}>Loading map...</div> }
 )
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -328,7 +328,7 @@ export default function TrajectoryExplorer() {
       {/* ── Demo data banner ─────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 16px', background: '#fff8ee',
+        padding: '10px 16px', background: '#1a1200',
         border: '1px solid #f8d38b', borderRadius: 8, marginBottom: 20,
         fontSize: 11, color: '#c28118',
       }}>
@@ -363,7 +363,7 @@ export default function TrajectoryExplorer() {
                   onClick={() => selectVehicle(v.vehicle_id)}
                   style={{
                     padding: '10px 12px', borderRadius: 7, cursor: 'pointer', marginBottom: 6,
-                    background: selected?.vehicle_id === v.vehicle_id ? '#e4f5f9' : '#f6f9fb',
+                    background: selected?.vehicle_id === v.vehicle_id ? '#0c2030' : 'var(--muted)',
                     border: `1px solid ${selected?.vehicle_id === v.vehicle_id ? 'var(--primary)' : 'var(--border)'}`,
                     transition: 'all .15s',
                   }}
@@ -390,7 +390,7 @@ export default function TrajectoryExplorer() {
             </div>
           )}
           {error && (
-            <div style={{ padding: '12px 14px', background: '#fce9e9', color: '#b94040', borderRadius: 7, fontSize: 11, marginBottom: 14 }}>
+            <div style={{ padding: '12px 14px', background: '#1a0508', color: '#b94040', borderRadius: 7, fontSize: 11, marginBottom: 14 }}>
               <AlertCircle size={13} style={{ marginRight: 6 }} />{error}
             </div>
           )}
@@ -412,7 +412,7 @@ export default function TrajectoryExplorer() {
                     <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '3px 0' }}>
                       {selected.vehicle_id} · {selected.vehicle_type} · {selected.make_model}
                     </p>
-                    <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: '#fff3dd', color: '#c28118', border: '1px solid #f8d38b' }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: '#1a1000', color: '#c28118', border: '1px solid #f8d38b' }}>
                       DEMO DATASET
                     </span>
                   </div>
@@ -513,8 +513,8 @@ export default function TrajectoryExplorer() {
                   {/* Movement summary */}
                   <div style={{
                     marginTop: 16, padding: '12px 16px',
-                    background: '#f0f6fb', borderLeft: '4px solid var(--primary)',
-                    borderRadius: '0 7px 7px 0', fontSize: 12, color: '#344b60', lineHeight: 1.7,
+                    background: 'var(--muted)', borderLeft: '4px solid var(--primary)',
+                    borderRadius: '0 7px 7px 0', fontSize: 12, color: '#b0cce0', lineHeight: 1.7,
                   }}>
                     <strong>Movement Summary:</strong>{' '}
                     {obs.map((o, i) => {

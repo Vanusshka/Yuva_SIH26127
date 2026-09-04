@@ -481,7 +481,7 @@ export default function VideoUpload() {
           {fileError && (
             <div style={{
               margin: '0 18px 18px', padding: '10px 14px',
-              background: '#fce9e9', color: '#b94040',
+              background: '#1a0508', color: '#b94040',
               borderRadius: 7, fontSize: 11, display: 'flex', gap: 8, alignItems: 'center',
             }}>
               <AlertCircle size={13} style={{ flexShrink: 0 }} />
@@ -573,7 +573,7 @@ export default function VideoUpload() {
                   style={{
                     width: '100%', padding: '8px 10px', marginBottom: 14,
                     border: '1px solid var(--border)', borderRadius: 6,
-                    background: 'white', color: 'var(--foreground)',
+                    background: 'var(--card)', color: 'var(--foreground)',
                     fontSize: 12, cursor: 'pointer',
                   }}
                 >
@@ -590,7 +590,7 @@ export default function VideoUpload() {
                   style={{
                     width: '100%', padding: '8px 10px',
                     border: '1px solid var(--border)', borderRadius: 6,
-                    background: 'white', color: 'var(--foreground)',
+                    background: 'var(--card)', color: 'var(--foreground)',
                     fontSize: 12, cursor: 'pointer',
                   }}
                 >
@@ -631,7 +631,7 @@ export default function VideoUpload() {
                       <span>Uploading to backend…</span>
                       <span>{uploadPct}%</span>
                     </div>
-                    <div style={{ height: 4, background: '#e9eff3', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: 4, background: '#1a2f44', borderRadius: 3, overflow: 'hidden' }}>
                       <div style={{
                         height: '100%', background: 'var(--cyan)', borderRadius: 3,
                         width: `${uploadPct}%`, transition: 'width .3s',
@@ -663,7 +663,7 @@ export default function VideoUpload() {
           <div style={{ padding: '20px 18px' }}>
             <div style={{
               display: 'flex', alignItems: 'flex-start', gap: 12,
-              padding: '14px 16px', background: '#fce9e9', borderRadius: 8,
+              padding: '14px 16px', background: '#1a0508', borderRadius: 8,
             }}>
               <AlertCircle size={18} color="var(--red)" style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
@@ -704,7 +704,7 @@ export default function VideoUpload() {
             Cancel
           </button>
           <p style={{ alignSelf: 'center', fontSize: 10, color: 'var(--muted-foreground)' }}>
-            Calls&nbsp;<code style={{ background: '#eef3f7', padding: '2px 5px', borderRadius: 3, fontSize: 9 }}>
+            Calls&nbsp;<code style={{ background: 'var(--muted)', padding: '2px 5px', borderRadius: 3, fontSize: 9 }}>
               POST /process/video
             </code>
           </p>
@@ -717,7 +717,7 @@ export default function VideoUpload() {
           {/* Success banner */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: '14px 18px', background: '#dff5ec',
+            padding: '14px 18px', background: '#021a0f',
             border: '1px solid #aee8ce', borderRadius: 8, marginBottom: 20,
           }}>
             <CheckCircle2 size={20} color="var(--green)" />
@@ -813,7 +813,7 @@ export default function VideoUpload() {
 
                     {/* Partial reads section */}
                     {(result.partial_plates?.length ?? 0) > 0 && (
-                      <div style={{ marginTop: 16, padding: '10px 12px', background: '#fff8ee', borderRadius: 7, border: '1px solid #f8d38b' }}>
+                      <div style={{ marginTop: 16, padding: '10px 12px', background: '#1a1200', borderRadius: 7, border: '1px solid #f8d38b' }}>
                         <p style={{ fontSize: 10, fontWeight: 700, color: '#c28118', margin: '0 0 8px', letterSpacing: '.5px' }}>
                           PARTIAL READS — incomplete OCR, not verified plates
                         </p>
@@ -858,7 +858,7 @@ export default function VideoUpload() {
                               {count} ({Math.round(count / result.total_detections * 100)}%)
                             </span>
                           </div>
-                          <div style={{ height: 5, background: '#e9eff3', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ height: 5, background: '#1a2f44', borderRadius: 3, overflow: 'hidden' }}>
                             <div style={{
                               height: '100%', borderRadius: 3,
                               background: type === 'car' ? 'var(--cyan)' :
@@ -896,7 +896,7 @@ export default function VideoUpload() {
                     </div>
                   ))}
                   {result.warnings.length > 0 && (
-                    <div style={{ marginTop: 10, padding: '8px 10px', background: '#fff3dd', borderRadius: 6 }}>
+                    <div style={{ marginTop: 10, padding: '8px 10px', background: '#1a1000', borderRadius: 6 }}>
                       {result.warnings.map((w, i) => (
                         <p key={i} style={{ fontSize: 9, color: '#c28118', margin: '2px 0' }}>⚠ {w}</p>
                       ))}

@@ -47,7 +47,7 @@ const CityMapComponent = dynamic(
       <div style={{
         height: 'calc(100vh - 240px)', minHeight: 440,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#f0f6fb', borderRadius: 8, color: 'var(--muted-foreground)',
+        background: 'var(--muted)', borderRadius: 8, color: 'var(--muted-foreground)',
         gap: 10, fontSize: 12,
       }}>
         <div style={{ animation: 'spin 1s linear infinite', display: 'flex' }}>
@@ -143,7 +143,7 @@ function PlaceholderBadge() {
   return (
     <span style={{
       display: 'inline-block', padding: '2px 7px', borderRadius: 10,
-      background: '#fff3dd', color: '#c28118',
+      background: '#1a1000', color: '#c28118',
       fontSize: 9, fontWeight: 700, letterSpacing: '.6px', marginLeft: 8,
     }}>
       DEMO DATA
@@ -321,9 +321,9 @@ export function Overview() {
       {loading && <Loading label="Fetching live analyticsâ€¦" />}
       {error && !loading && <ErrorBanner message={error} onRetry={load} />}
       {isDemo && !loading && (
-        <div style={{ marginBottom: 14, fontSize: 11, color: '#5a8090', padding: '8px 12px', background: '#f0f6fb', borderRadius: 6 }}>
+        <div style={{ marginBottom: 14, fontSize: 11, color: 'var(--muted-foreground)', padding: '8px 12px', background: 'var(--muted)', borderRadius: 6 }}>
           Backend offline - showing empty state. Start the backend at&nbsp;
-          <code style={{ background: '#dde5ec', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>
+          <code style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>
             localhost:8000
           </code>
           &nbsp;to see live data.
@@ -528,7 +528,7 @@ export function VehicleSearch() {
               ))}
             </div>
             {vehicle.is_blacklisted && (
-              <div style={{ marginTop: 10, padding: '8px 12px', background: '#fce9e9', borderRadius: 6, fontSize: 11, color: '#b94040' }}>
+              <div style={{ marginTop: 10, padding: '8px 12px', background: '#1a0508', borderRadius: 6, fontSize: 11, color: '#b94040' }}>
                 âš  DEMO Blacklisted - {vehicle.blacklist_reason}
               </div>
             )}
@@ -658,8 +658,8 @@ export function CameraNetwork() {
 
       {/* Honest status notice */}
       <div style={{
-        padding: '8px 14px', background: '#f0f6fb', borderRadius: 7,
-        fontSize: 10, color: '#5a8090', marginBottom: 17,
+        padding: '8px 14px', background: 'var(--muted)', borderRadius: 7,
+        fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 17,
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <Camera size={12} />
@@ -687,7 +687,7 @@ export function CameraNetwork() {
 
       {/* Usage instructions */}
       <div style={{
-        marginTop: 16, padding: '12px 16px', background: '#f6f9fb',
+        marginTop: 16, padding: '12px 16px', background: 'var(--muted)',
         borderRadius: 8, fontSize: 10, color: 'var(--muted-foreground)',
       }}>
         <strong style={{ display: 'block', marginBottom: 4, color: 'var(--foreground)' }}>How to use</strong>
@@ -1026,7 +1026,7 @@ export function SystemHealth() {
       <div className="kpi-grid">
         {services.map(([name, ok, detail]) => (
           <article className="kpi-card" key={name}>
-            <span className="kpi-icon green-bg" style={ok ? {} : { color: '#c14f52', background: '#fce9e9' }}>
+            <span className="kpi-icon green-bg" style={ok ? {} : { color: '#c14f52', background: '#1a0508' }}>
               <Activity />
             </span>
             <span className="kpi-label">{name}</span>
@@ -1120,7 +1120,7 @@ export function ManualReviewPage() {
 
   return (
     <>
-      <div style={{ marginBottom: 14, padding: '8px 14px', background: '#fff8ee', borderRadius: 7, fontSize: 10, color: '#c28118', border: '1px solid #f8d38b' }}>
+      <div style={{ marginBottom: 14, padding: '8px 14px', background: '#1a1200', borderRadius: 7, fontSize: 10, color: '#c28118', border: '1px solid #f8d38b' }}>
         <strong>Change 5 - Blacklist Safety Gate:</strong> LOW-confidence plate reads never auto-trigger blacklist alerts.
         They appear here for human verification before any action is taken.
         Only CONFIRMED or EDITED items become eligible for blacklist matching.
@@ -1223,7 +1223,7 @@ export function ManualReviewPage() {
                     ['Matching reads',  String(item.matching_ocr_reads ?? '-')],
                     ['OCR confidence',  item.ocr_confidence !== null ? `${((item.ocr_confidence ?? 0) * 100).toFixed(1)}%` : '-'],
                   ].map(([k, v]) => (
-                    <div key={k} style={{ padding: '6px 10px', background: '#f6f9fb', borderRadius: 6 }}>
+                    <div key={k} style={{ padding: '6px 10px', background: 'var(--muted)', borderRadius: 6 }}>
                       <span style={{ display: 'block', color: 'var(--muted-foreground)', marginBottom: 2 }}>{k}</span>
                       <strong>{v}</strong>
                     </div>
@@ -1236,7 +1236,7 @@ export function ManualReviewPage() {
 
                 {/* Inline edit panel */}
                 {isEditing && (
-                  <div style={{ marginTop: 10, padding: '10px 12px', background: '#f0f6fb', borderRadius: 7, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--muted)', borderRadius: 7, display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span style={{ fontSize: 10, fontWeight: 700 }}>Corrected plate:</span>
                     <input
                       style={{ flex: 1, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontWeight: 700 }}

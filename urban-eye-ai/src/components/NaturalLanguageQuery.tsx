@@ -155,7 +155,7 @@ export default function NaturalLanguageQuery() {
             </span>
             <span style={{
               fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 4,
-              background: '#fff3dd', color: '#b45309', letterSpacing: '.5px',
+              background: '#1a1000', color: '#b45309', letterSpacing: '.5px',
             }}>
               LIVE DATA
             </span>
@@ -181,7 +181,7 @@ export default function NaturalLanguageQuery() {
                 style={{
                   width: '100%', padding: '10px 12px 10px 36px',
                   border: '1.5px solid var(--border)', borderRadius: 8,
-                  fontSize: 12, background: 'white', color: 'var(--foreground)',
+                  fontSize: 12, background: 'var(--card)', color: 'var(--foreground)',
                   outline: 'none', boxSizing: 'border-box',
                 }}
                 onFocus={e => e.target.style.borderColor = 'var(--cyan)'}
@@ -275,7 +275,7 @@ export default function NaturalLanguageQuery() {
                   {Object.entries(result.parameters).map(([k, v]) => (
                     <span key={k} style={{
                       fontSize: 9, padding: '2px 7px', borderRadius: 4,
-                      background: '#f0f4f7', color: 'var(--muted-foreground)',
+                      background: 'var(--muted)', color: 'var(--muted-foreground)',
                       border: '1px solid var(--border)',
                     }}>
                       {k}: <strong>{Array.isArray(v) ? (v as string[]).join(', ') : String(v)}</strong>

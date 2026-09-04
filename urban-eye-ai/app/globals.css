@@ -430,3 +430,23 @@ select option { background: #0d1829; color: #b0cce0; }
 /* The landing and login pages are already on dark background (#080f1c / #060d18)
    and do not use the --background / --card CSS variables, so they are unaffected
    by the theme change above. */
+
+/* Fix remaining inline-style light backgrounds via targeted CSS */
+.panel select, .panel input[type="text"], .panel input[type="search"] {
+  background: #0d1829 !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+/* Progress bar tracks */
+div[style*="background: #e9eff3"],
+div[style*="background:#e9eff3"] {
+  background: #1a2f44 !important;
+}
+
+/* Info/warning notice boxes inside panels */
+div[style*="background: '#f0f6fb'"],
+div[style*="background: '#f6f9fb'"] {
+  background: var(--muted) !important;
+  color: var(--muted-foreground) !important;
+}

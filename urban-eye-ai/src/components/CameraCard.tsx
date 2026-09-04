@@ -215,7 +215,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        background: 'white', borderRadius: 10, width: '100%', maxWidth: 820,
+        background: 'var(--card)', borderRadius: 10, width: '100%', maxWidth: 820,
         maxHeight: 'calc(100vh - 40px)', overflowY: 'auto',
         boxShadow: '0 24px 48px rgba(0,0,0,.35)',
       }}>
@@ -244,7 +244,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
           {/* Camera info row */}
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10,
-            padding: '12px 16px', background: '#f6f9fb',
+            padding: '12px 16px', background: 'var(--muted)',
             borderRadius: 8, marginBottom: 20, fontSize: 10,
           }}>
             {[
@@ -268,7 +268,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 padding: '4px 10px', borderRadius: 12,
-                background: '#eef3f7', color: '#6d7f92', fontSize: 10, fontWeight: 700,
+                background: 'var(--muted)', color: '#6d7f92', fontSize: 10, fontWeight: 700,
               }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#9aa8b5', display: 'inline-block' }} />
                 No live source connected · Upload a video to analyse this camera
@@ -289,7 +289,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 padding: '4px 10px', borderRadius: 12,
-                background: '#dff5ec', color: '#169266', fontSize: 10, fontWeight: 700,
+                background: '#021a0f', color: '#169266', fontSize: 10, fontWeight: 700,
               }}>
                 <CheckCircle2 size={10} />
                 Video Processed · {fmtTime(result.processed_at)}
@@ -309,7 +309,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
                   style={{
                     border: '2px dashed var(--border)', borderRadius: 8,
                     padding: '28px', textAlign: 'center', cursor: 'pointer',
-                    background: '#f8fbfd',
+                    background: 'var(--muted)',
                   }}
                   onClick={() => fileRef.current?.click()}
                   onDragOver={e => e.preventDefault()}
@@ -373,7 +373,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
                     style={{
                       width: '100%', marginTop: 5, padding: '8px 10px',
                       border: '1px solid var(--border)', borderRadius: 6,
-                      background: 'white', fontSize: 11, cursor: 'pointer',
+                      background: 'var(--card)', fontSize: 11, cursor: 'pointer',
                     }}
                   >
                     {FRAME_SKIP_OPTIONS.map(o => (
@@ -400,7 +400,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 3 }}>
                     <span>Uploading to backend…</span><span>{uploadPct}%</span>
                   </div>
-                  <div style={{ height: 4, background: '#e9eff3', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: 4, background: '#1a2f44', borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', background: 'var(--cyan)', borderRadius: 3, width: `${uploadPct}%`, transition: 'width .3s' }} />
                   </div>
                 </div>
@@ -439,7 +439,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
           {errorMsg && (
             <div style={{
               display: 'flex', alignItems: 'flex-start', gap: 8,
-              padding: '12px 14px', background: '#fce9e9', borderRadius: 8, marginBottom: 16,
+              padding: '12px 14px', background: '#1a0508', borderRadius: 8, marginBottom: 16,
             }}>
               <AlertCircle size={15} color="#b94040" style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
@@ -481,7 +481,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
                     .map(([type, count]) => (
                       <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                         <span style={{ fontSize: 11, textTransform: 'capitalize', width: 90 }}>{type}</span>
-                        <div style={{ flex: 1, height: 5, background: '#e9eff3', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ flex: 1, height: 5, background: '#1a2f44', borderRadius: 3, overflow: 'hidden' }}>
                           <div style={{
                             height: '100%', borderRadius: 3,
                             background: type === 'car' ? 'var(--cyan)' : type === 'motorcycle' ? 'var(--amber)' :
@@ -496,7 +496,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
               )}
 
               {/* Traffic density */}
-              <div style={{ padding: '10px 14px', background: '#f6f9fb', borderRadius: 8, marginBottom: 12 }}>
+              <div style={{ padding: '10px 14px', background: 'var(--muted)', borderRadius: 8, marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted-foreground)', margin: '0 0 3px' }}>
@@ -546,7 +546,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
                     {result.partial_plates.map(p => (
                       <span key={p} style={{
                         padding: '3px 8px', borderRadius: 5,
-                        background: '#fff3dd', color: '#c28118',
+                        background: '#1a1000', color: '#c28118',
                         fontSize: 10, fontWeight: 700, border: '1px solid #f8d38b',
                       }}>{p}</span>
                     ))}
@@ -558,7 +558,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
               )}
 
               {/* Source info */}
-              <div style={{ padding: '8px 14px', background: '#f6f9fb', borderRadius: 8, fontSize: 10 }}>
+              <div style={{ padding: '8px 14px', background: 'var(--muted)', borderRadius: 8, fontSize: 10 }}>
                 <p style={{ margin: '0 0 4px', color: 'var(--muted-foreground)', fontWeight: 700 }}>PROCESSING INFO</p>
                 {[
                   ['Source file',     result.source_file],
@@ -574,7 +574,7 @@ function CameraModal({ camera, stored, onClose, onResult }: ModalProps) {
                 ))}
               </div>
               {result.warnings.length > 0 && (
-                <div style={{ padding: '8px 12px', background: '#fff8ee', borderRadius: 6, marginTop: 8 }}>
+                <div style={{ padding: '8px 12px', background: '#1a1200', borderRadius: 6, marginTop: 8 }}>
                   {result.warnings.map((w, i) => (
                     <p key={i} style={{ fontSize: 9, color: '#c28118', margin: '2px 0' }}>⚠ {w}</p>
                   ))}
@@ -656,10 +656,10 @@ export function CameraCard({ camera, stored, onUpdate }: CameraCardProps) {
           </div>
           {/* Status indicator */}
           {stored
-            ? <span style={{ fontSize: 9, fontWeight: 700, color: '#169266', background: '#dff5ec', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>
+            ? <span style={{ fontSize: 9, fontWeight: 700, color: '#169266', background: '#021a0f', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>
                 ✓ Processed
               </span>
-            : <span style={{ fontSize: 9, fontWeight: 700, color: '#9aa8b5', background: '#f0f4f7', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>
+            : <span style={{ fontSize: 9, fontWeight: 700, color: '#9aa8b5', background: 'var(--muted)', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>
                 No video
               </span>
           }
