@@ -65,6 +65,9 @@ Analytics advanced (C3/C4/C5)
   GET /analytics/od-matrix     – C4 origin-destination flow matrix + GeoJSON arcs
   GET /analytics/bottlenecks   – C5 sustained congestion bottleneck ranking
 
+Natural Language Query
+  POST /query                  – plain-English question → structured DB results
+
 Alerts extended (Phase 7)
   GET /alerts  – combined alert feed (blacklist + congestion + anomaly)
 """
@@ -1665,3 +1668,58 @@ def trajectory_explorer_detail(vehicle_id: str):
                    f"Try: VH-DEMO-001, TS09AB1234, MH12XY5678, DL01ZZ9999"
         )
     return data
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NATURAL-LANGUAGE QUERY  (POST /query)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+from app.services.nl_query_service import process_nl_query
+from app.schemas.nl_query import NLQueryRequest, NLQueryResponse as NLQueryResp
+
+
+@app.post(
+    "/query",
+    response_model = NLQueryResp,
+    tags           = ["Natural Language Query"],
+    summary        = "Ask a plain-English question about vehicle/traffic data",
+)
+def natural_language_query(
+    request: NLQueryRequest,
+    db     : Session = Depends(get_db),
+):
+    """
+    **Natural Language Query — ask questions in plain English.**
+
+    Type a question and get structured results from the live detection database.
+
+    **Supported question types:**
+
+    | Pattern | Example |
+    |---------|---------|
+    | Vehicles at a location | "Which vehicles crossed Ameerpet Junction in the last hour?" |
+    | Count at a location | "How many vehicles at Begumpet in the last 2 hours?" |
+    | Plate lookup | "Find plate TS09AB1234" |
+    | Time range | "Show vehicles between 6 PM and 7 PM" |
+    | Recent activity | "Vehicles in the last 30 minutes" |
+    | Suspicious vehicles | "Show suspicious vehicles" |
+    | Multi-camera tracking | "Vehicles seen at more than 2 cameras" |
+    | Help | "Help" or "What can I ask?" |
+
+    **Response fields:**
+    - `answer_text` — one-sentence plain-English answer (show this prominently)
+    - `interpreted_as` — what the parser understood (for transparency)
+    - `rows` + `columns` — tabular results for table rendering
+    - `suggestions` — follow-up questions to show as chips in the UI
+    - `confidence` — HIGH | MEDIUM | LOW (parser certainty)
+
+    **Location matching** is fuzzy — "ameerpet", "HITEC", "CAM_001",
+    "begumpet junction" all resolve to the correct camera(s).
+
+    No external LLM required — deterministic intent parser, 100% offline.
+    """
+    logger.info("[NLQuery] POST /query: %r", request.question)
+    try:
+        return process_nl_query(request, db)
+    except Exception as exc:
+        logger.error("[NLQuery] Unexpected error: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Query processing error: {exc}") from exc

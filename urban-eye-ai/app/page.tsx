@@ -37,6 +37,11 @@ const TrajectoryExplorer = dynamic(
   { ssr: false }
 )
 
+const NaturalLanguageQuery = dynamic(
+  () => import('@/src/components/NaturalLanguageQuery'),
+  { ssr: false }
+)
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Page frame wrapper
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,6 +99,7 @@ function AppRoutes() {
         <Route path="system-health"     element={<><PageFrame>System Health</PageFrame><SystemHealth /></>} />
         <Route path="manual-review"     element={<><PageFrame>Manual Review Queue</PageFrame><ManualReviewPage /></>} />
         <Route path="trajectory-explorer" element={<><PageFrame>Trajectory Explorer</PageFrame><TrajectoryExplorer /></>} />
+        <Route path="nl-query"            element={<><PageFrame>Natural Language Query</PageFrame><NaturalLanguageQuery /></>} />
       </Route>
 
       {/* ── Legacy redirect shims ── */}
