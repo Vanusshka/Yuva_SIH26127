@@ -60,6 +60,11 @@ Analytics extended (Phase 7)
   GET /analytics/cameras   – per-camera stats
   GET /analytics/hourly    – alias of /analytics/peak-hours
 
+Analytics advanced (C3/C4/C5)
+  GET /analytics/heatmap       – C3 per-camera density + GeoJSON heatmap
+  GET /analytics/od-matrix     – C4 origin-destination flow matrix + GeoJSON arcs
+  GET /analytics/bottlenecks   – C5 sustained congestion bottleneck ranking
+
 Alerts extended (Phase 7)
   GET /alerts  – combined alert feed (blacklist + congestion + anomaly)
 """
@@ -1009,6 +1014,131 @@ def analytics_hourly(db: Session = Depends(get_db)):
     This is an alias of `GET /analytics/peak-hours`.
     """
     return get_peak_hours(db)
+
+
+# ── Advanced Analytics: C3 Heatmap · C4 OD Matrix · C5 Bottlenecks ───────────
+
+from app.services.advanced_analytics_service import (
+    get_heatmap,
+    get_od_matrix,
+    get_bottlenecks,
+)
+from app.schemas.c3_c5 import (
+    HeatmapResponse,
+    ODMatrixResponse,
+    BottleneckResponse,
+)
+
+
+@app.get(
+    "/analytics/heatmap",
+    response_model = HeatmapResponse,
+    tags           = ["Analytics – Advanced"],
+    summary        = "C3 Traffic density heatmap — per-camera intensity + GeoJSON",
+)
+def analytics_heatmap(
+    window_hours: int = Query(1, ge=1, le=24,
+                              description="Look-back window in hours (default 1h)"),
+    db: Session = Depends(get_db),
+):
+    """
+    **C3 — Traffic Flow Heatmap**
+
+    Returns per-camera vehicle density with GeoJSON FeatureCollection for
+    direct map layer rendering.
+
+    **Intensity** is normalised 0.0–1.0 (busiest camera = 1.0). Feed this
+    value to Leaflet `L.heatLayer()` or Mapbox `addSource(type='geojson')`.
+
+    **GeoJSON format:** FeatureCollection of Point features with properties:
+    - `camera_id`, `location_name`
+    - `vehicle_count` — raw count in the window
+    - `density_label` — LOW | MEDIUM | HIGH | SEVERE
+    - `intensity` — normalised weight for heatmap rendering
+
+    Statistical method: vehicle count per camera per time window.
+    No ML model — pure aggregation from the Detection table.
+    """
+    return get_heatmap(db, window_hours=window_hours)
+
+
+@app.get(
+    "/analytics/od-matrix",
+    response_model = ODMatrixResponse,
+    tags           = ["Analytics – Advanced"],
+    summary        = "C4 Origin-Destination matrix — camera-pair flow counts + GeoJSON arcs",
+)
+def analytics_od_matrix(
+    window_hours: int = Query(24, ge=1, le=168,
+                              description="Look-back window in hours (default 24h)"),
+    top_n       : int = Query(20, ge=1, le=100,
+                              description="Maximum OD pairs to return, ranked by volume"),
+    db: Session = Depends(get_db),
+):
+    """
+    **C4 — Origin-Destination Pattern Detection**
+
+    Derives travel patterns from the real Detection table:
+    - origin = first camera a plate was seen at in the window
+    - destination = last camera that same plate was seen at
+    - count = number of distinct plates making that journey
+
+    Also returns `avg_duration_min` and `avg_distance_km` per OD pair, and a
+    **GeoJSON FeatureCollection of LineString arcs** for desire-line map rendering
+    (feed to Leaflet polyline or Mapbox line layer).
+
+    Plates seen at only one camera are excluded (no journey to measure).
+
+    Data pipeline method: GROUP BY (first_camera, last_camera) on Detection table.
+    No ML model.
+    """
+    return get_od_matrix(db, window_hours=window_hours, top_n=top_n)
+
+
+@app.get(
+    "/analytics/bottlenecks",
+    response_model = BottleneckResponse,
+    tags           = ["Analytics – Advanced"],
+    summary        = "C5 Congestion bottleneck ranking — sustained congestion by persistence score",
+)
+def analytics_bottlenecks(
+    window_hours      : int = Query(3,  ge=1, le=24,
+                                   description="Total look-back window (default 3h)"),
+    sub_window_minutes: int = Query(30, ge=5, le=120,
+                                   description="Sub-window size in minutes (default 30min)"),
+    top_n             : int = Query(10, ge=1, le=50,
+                                   description="Maximum bottlenecks to return"),
+    db: Session = Depends(get_db),
+):
+    """
+    **C5 — Congestion Bottleneck Detection**
+
+    Identifies cameras with *sustained* congestion rather than momentary spikes.
+
+    **Method:**
+    1. Divide the look-back window into sub-windows of `sub_window_minutes`
+    2. For each sub-window × camera: label HIGH or SEVERE if count ≥ threshold
+    3. `persistence` = fraction of sub-windows where camera was HIGH/SEVERE (0.0–1.0)
+    4. `bottleneck_score` = total_vehicle_count × persistence
+    5. Rank by bottleneck_score descending
+
+    **Why this beats simple density:**
+    A camera with 3 vehicles/hour right now ranks lower than one that has been
+    SEVERE for the past 2 hours — this finds structural bottlenecks, not noise.
+
+    **`congested_since`** — ISO timestamp of the first sub-window where congestion
+    was detected, useful for "congested for X minutes" labels in the UI.
+
+    Rule-based method (threshold on density per sub-window). No ML model required.
+    Optional upgrade: replace persistence threshold with z-score or Isolation Forest
+    on the per-camera time series for anomaly-detection framing.
+    """
+    return get_bottlenecks(
+        db,
+        window_hours       = window_hours,
+        sub_window_minutes = sub_window_minutes,
+        top_n              = top_n,
+    )
 
 
 # ── Combined alert feed (Phase 7 → upgraded to Phase 8 schema) ───────────────
