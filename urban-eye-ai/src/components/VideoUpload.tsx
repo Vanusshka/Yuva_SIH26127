@@ -333,32 +333,21 @@ export default function VideoUpload() {
     setElapsedSec(0)
 
     try {
-      // Fire both the real API call and the stage animation in parallel.
-      // The API call drives the actual result; the animation drives the UI.
-      const [apiResult] = await Promise.all([
-        processVideo(file, cameraId, frameSkip, (pct) => {
-          setUploadPct(pct)
-          if (pct === 100) {
-            setDoneStages(prev => new Set([...prev, 'uploading']))
-            setActiveStage('vehicles')
-          }
-        }),
-        // Stage animation resolves independently — won't block the real result
-        new Promise<void>(resolve => {
-          // Wait for upload to complete (pct hits 100) then animate stages
-          const poll = setInterval(() => {
-            setUploadPct(prev => {
-              if (prev >= 100) {
-                clearInterval(poll)
-                resolve()
-              }
-              return prev
-            })
-          }, 200)
-        }).then(() => runStageAnimation()),
-      ])
+      // Start stage animation independently — it is purely cosmetic and must
+      // NEVER block the API result from being shown.
+      // We fire-and-forget it; when the API returns we override the stages anyway.
+      runStageAnimation()
 
-      // Mark all stages done once we have the result
+      // The real API call — this drives everything
+      const apiResult = await processVideo(file, cameraId, frameSkip, (pct) => {
+        setUploadPct(pct)
+        if (pct === 100) {
+          setDoneStages(prev => new Set([...prev, 'uploading']))
+          setActiveStage('vehicles')
+        }
+      })
+
+      // API returned — mark all stages done immediately
       setDoneStages(new Set(STAGES.map(s => s.id)))
       setActiveStage(null)
       setResult(apiResult)
