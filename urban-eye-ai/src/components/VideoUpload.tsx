@@ -332,27 +332,27 @@ export default function VideoUpload() {
     setStartTime(Date.now())
     setElapsedSec(0)
 
-    try {
-      // Start stage animation independently — it is purely cosmetic and must
-      // NEVER block the API result from being shown.
-      // We fire-and-forget it; when the API returns we override the stages anyway.
-      runStageAnimation()
+    // Simple stage cycling — purely visual, does NOT block result display
+    const stageOrder: StageId[] = ['uploading', 'vehicles', 'tracking', 'plates', 'ocr', 'analytics']
+    let stageIdx = 0
+    const stageTimer = setInterval(() => {
+      stageIdx = Math.min(stageIdx + 1, stageOrder.length - 1)
+      setActiveStage(stageOrder[stageIdx])
+    }, 4000) // advance one stage every 4s cosmetically
 
-      // The real API call — this drives everything
+    try {
       const apiResult = await processVideo(file, cameraId, frameSkip, (pct) => {
         setUploadPct(pct)
-        if (pct === 100) {
-          setDoneStages(prev => new Set([...prev, 'uploading']))
-          setActiveStage('vehicles')
-        }
       })
 
-      // API returned — mark all stages done immediately
+      // API returned — stop animation, show results immediately
+      clearInterval(stageTimer)
       setDoneStages(new Set(STAGES.map(s => s.id)))
       setActiveStage(null)
       setResult(apiResult)
       setUploadState('done')
     } catch (err) {
+      clearInterval(stageTimer)
       const msg = err instanceof ApiError
         ? err.detail
         : `Unexpected error: ${(err as Error).message}`
@@ -360,7 +360,7 @@ export default function VideoUpload() {
       setActiveStage(null)
       setUploadState('error')
     }
-  }, [file, uploadState, cameraId, frameSkip, runStageAnimation])
+  }, [file, uploadState, cameraId, frameSkip])
 
   const handleReset = useCallback(() => {
     clearFile()
@@ -701,7 +701,7 @@ export default function VideoUpload() {
       )}
 
       {/* ── Results ────────────────────────────────────────────────────────── */}
-      {result && uploadState === 'done' && (
+      {result && (uploadState === 'done' || uploadState === 'error') && (
         <>
           {/* Success banner */}
           <div style={{
