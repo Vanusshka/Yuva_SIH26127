@@ -345,37 +345,64 @@ export default function TrajectoryExplorer() {
         <div>
           <div className="panel">
             <div className="panel-header">
-              <div><h2>Select Vehicle</h2><p>Demo dataset</p></div>
+              <div>
+                <h2>🧪 Test Cases</h2>
+                <p>10 vehicles · 6 cameras · 2026-09-05</p>
+              </div>
             </div>
-            <div style={{ padding: '12px 14px' }}>
+            <div style={{ padding: '10px 14px 6px', borderBottom: '1px solid var(--border)', marginBottom: 6 }}>
+              <p style={{ fontSize: 9, color: 'var(--muted-foreground)', margin: 0, lineHeight: 1.5 }}>
+                Source: <code style={{ fontSize: 8, background: 'var(--muted)', padding: '1px 4px', borderRadius: 3 }}>urbaneye-synthetic-trajectory-demo.csv</code>
+              </p>
+            </div>
+            <div style={{ padding: '6px 14px 12px' }}>
               <div className="table-search" style={{ width: '100%', marginBottom: 10 }}>
                 <Search size={13} />
                 <input
-                  placeholder="Search plate or vehicle ID…"
+                  placeholder="Search plate, vehicle ID or type…"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                 />
               </div>
               {loading && <div style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '8px 0' }}>Loading…</div>}
-              {filteredVehicles.map(v => (
+              {filteredVehicles.map((v, idx) => (
                 <div
                   key={v.vehicle_id}
                   onClick={() => selectVehicle(v.vehicle_id)}
                   style={{
-                    padding: '10px 12px', borderRadius: 7, cursor: 'pointer', marginBottom: 6,
-                    background: selected?.vehicle_id === v.vehicle_id ? '#0c2030' : 'var(--muted)',
+                    padding: '10px 12px', borderRadius: 7, cursor: 'pointer', marginBottom: 5,
+                    background: selected?.vehicle_id === v.vehicle_id ? 'var(--muted)' : 'transparent',
                     border: `1px solid ${selected?.vehicle_id === v.vehicle_id ? 'var(--primary)' : 'var(--border)'}`,
                     transition: 'all .15s',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: 13, color: 'var(--primary)' }}>{v.plate_number}</strong>
-                    <span style={{ fontSize: 9, color: '#9aa8b5' }}>{v.total_obs} obs</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{
+                        fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 3,
+                        background: 'var(--muted)', color: 'var(--muted-foreground)',
+                        letterSpacing: '.5px',
+                      }}>{v.vehicle_id}</span>
+                      <strong style={{ fontSize: 12, color: 'var(--primary)', fontFamily: 'Courier New, monospace' }}>
+                        {v.plate_number}
+                      </strong>
+                    </div>
+                    <span style={{ fontSize: 9, color: 'var(--muted-foreground)' }}>
+                      {v.total_obs} cams
+                    </span>
                   </div>
-                  <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginTop: 2 }}>{v.vehicle_id}</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{v.vehicle_type} · {v.make_model}</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginTop: 3, display: 'flex', gap: 6 }}>
+                    <span>🚗 {v.vehicle_type}</span>
+                    <span style={{ color: 'var(--border)' }}>·</span>
+                    <span>{v.cameras.join(' → ')}</span>
+                  </div>
                 </div>
               ))}
+              {filteredVehicles.length === 0 && !loading && (
+                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '8px 0' }}>
+                  No vehicles match "{query}"
+                </p>
+              )}
             </div>
           </div>
         </div>

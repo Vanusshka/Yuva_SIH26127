@@ -614,7 +614,7 @@ def process_nl_query(request: NLQueryRequest, db: Session) -> NLQueryResponse:
     # the time fragment itself (e.g. "vehicles IN THE LAST 30 minutes" has no
     # real location — the "in" belongs to the time phrase)
     has_location_phrase = bool(re.search(
-        r"\b(?:at|near|junction|road|signal|gate|circle|stop|plaza|station|underpass|flyover|nagar|pally|bowli|patnam|nakar|camp)\b",
+        r"\b(?:at|near|junction|road|signal|gate|circle|stop|plaza|station|underpass|flyover|nagar|pally|bowli|patnam|nakar|camp|banjara|punjagutta|ameerpet|begumpet|hitech|gachibowli|madhapur|kondapur|charminar|uppal|dilsukhnagar|paradise|mehdipatnam|tolichowki|secunderabad|kukatpally)\b",
         ql,
     ))
     if recent_m and not has_location_phrase:
@@ -624,7 +624,7 @@ def process_nl_query(request: NLQueryRequest, db: Session) -> NLQueryResponse:
     # ── 8. Vehicles at location (with optional time window) ───────────────────
     # Patterns: "vehicles at X", "which vehicles crossed X", "who was at X in last N hours"
     loc_time_m = re.search(
-        r"(?:vehicles?|cars?|who|which|show me|list)\s+(?:were\s+)?(?:at|in|near|crossed?|spotted at|detected at|passed through)\s+([a-z0-9 \-]+?)\s+(?:in\s+(?:the\s+)?last\s+)?(\d+(?:\.\d+)?)\s+(hour|hours|hr|hrs|minute|minutes|min|mins)",
+        r"(?:vehicles?|cars?|who|which|show(?:\s+me)?|list|what|display)\s+(?:were\s+)?(?:at|in|near|crossed?|spotted at|detected at|passed through|seen at|on)\s+([a-z0-9 \-]+?)\s+(?:in\s+(?:the\s+)?last\s+)?(\d+(?:\.\d+)?)\s+(hour|hours|hr|hrs|minute|minutes|min|mins)",
         ql,
     )
     if loc_time_m:
@@ -635,7 +635,7 @@ def process_nl_query(request: NLQueryRequest, db: Session) -> NLQueryResponse:
             return _handle_vehicles_at_location(location, hours, db)
 
     loc_m = re.search(
-        r"(?:vehicles?|cars?|who|which|show me|list)\s+(?:were\s+)?(?:at|in|near|crossed?|spotted at|detected at|passed through)\s+([a-z0-9 \-]+)",
+        r"(?:vehicles?|cars?|who|which|show(?:\s+me)?|list|what|display)\s+(?:were\s+)?(?:at|in|near|crossed?|spotted at|detected at|passed through|seen at|on)\s+([a-z0-9 \-]+)",
         ql,
     )
     if loc_m:

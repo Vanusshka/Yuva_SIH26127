@@ -680,3 +680,53 @@ div[style*="background: '#dcf4fa'"] { background: #261800 !important; }
 div[style*="background: '#f0f4f7'"] { background: #2a2015 !important; }
 div[style*="border: '1px solid #aee8ce'"] { border-color: #143820 !important; }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FONT COLOR VISIBILITY — boost contrast on warm dark background
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Main body text — brighter cream */
+body { color: #f0e8d0; }
+
+/* Page headings */
+.page-heading h1 { color: #f0e8d0 !important; }
+
+/* Panel headers */
+.panel-header h2 { color: #f0e8d0 !important; }
+.panel-header p  { color: #b0a080 !important; }
+
+/* KPI cards */
+.kpi-value { color: #f0e8d0 !important; }
+.kpi-label { color: #b0a080 !important; }
+
+/* Tables — much brighter so they're readable */
+th { color: #c0b090 !important; }
+td { color: #d8c8a0 !important; }
+
+/* Plate numbers — high contrast white-cream */
+.plate { color: #f0e8d0 !important; }
+
+/* Confidence values — bright green */
+.confidence { color: #4ade80 !important; }
+
+/* Nav items */
+.nav-item { color: #a09070 !important; }
+.nav-item:hover { color: #f0e8d0 !important; }
+.nav-item.active { color: #f0e8d0 !important; }
+
+/* Alert text */
+.alert-copy strong { color: #f0e8d0 !important; }
+.alert-copy small  { color: #a09070 !important; }
+
+/* Muted foreground — increase from #8a7a60 to more readable */
+:root { --muted-foreground: #b0a080; }
+
+/* Status pills text brightness boost */
+.status-pill        { color: #4ade80 !important; }
+.status-pill.amber  { color: #fbbf24 !important; }
+.status-pill.red    { color: #f87171 !important; }
+.status-pill.cyan   { color: #fbbf24 !important; }
+
+/* Input placeholders — visible but not dominating */
+input::placeholder, textarea::placeholder { color: #6a5a40 !important; }
+input, select, textarea { color: #f0e8d0 !important; }

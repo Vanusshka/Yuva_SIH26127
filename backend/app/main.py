@@ -1672,7 +1672,7 @@ def trajectory_explorer_detail(vehicle_id: str):
         raise HTTPException(
             status_code=404,
             detail=f"Demo vehicle '{vehicle_id}' not found. "
-                   f"Try: VH-DEMO-001, TS09AB1234, MH12XY5678, DL01ZZ9999"
+                   f"Try: VEH-001 … VEH-010 or plate numbers like TS09AB1234"
         )
     return data
 

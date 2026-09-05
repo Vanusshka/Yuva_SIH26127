@@ -506,15 +506,30 @@ export function VehicleSearch() {
         {error && <ErrorBanner message={error} />}
         <p style={{ fontSize: 10, color: 'var(--muted-foreground)', marginTop: 8 }}>
           Search any verified plate number from processed videos.
-          {' '}If you have seeded demo data, try: <code>TS09AB1234</code>
         </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+          <span style={{ fontSize: 9, color: 'var(--muted-foreground)', alignSelf: 'center' }}>Quick search:</span>
+          {['TS09AB1234','TS08CD5678','AP09EF2468','TS10GH1357','KA05JK7890',
+            'TS11LM4821','TS12NP6314','AP10QR9753','TS13ST2046','TS14UV8162'].map(p => (
+            <button
+              key={p}
+              onClick={() => track(p)}
+              style={{
+                fontSize: 9, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
+                background: 'var(--muted)', border: '1px solid var(--border)',
+                color: 'var(--primary)', fontFamily: 'Courier New, monospace',
+                fontWeight: 700, letterSpacing: '.3px',
+              }}
+            >{p}</button>
+          ))}
+        </div>
       </Panel>
 
       {loading && <Loading label={`Searching for ${plate}â€¦`} />}
 
       {vehicle && (
         <section className="dashboard-grid" style={{ marginTop: 17 }}>
-          <Panel title={`Vehicle information Â· ${vehicle.plate_number}`}>
+          <Panel title={`Vehicle information · ${vehicle.plate_number}`}>
             <div className="kpi-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
               {[
                 ['Type',        vehicle.vehicle_type],
@@ -537,8 +552,8 @@ export function VehicleSearch() {
           <Panel title="Journey summary">
             {traj ? (
               <>
-                <p>First detected {relativeTime(traj.first_seen)} Â· {traj.cameras_visited.length} cameras Â· {traj.total_distance_km.toFixed(2)} km traced</p>
-                <p>Duration: {traj.travel_duration_min.toFixed(0)} min Â· Avg speed: {traj.average_speed_kmh.toFixed(1)} km/h</p>
+                <p>First detected {relativeTime(traj.first_seen)} · {traj.cameras_visited.length} cameras · {traj.total_distance_km.toFixed(2)} km traced</p>
+                <p>Duration: {traj.travel_duration_min.toFixed(0)} min · Avg speed: {traj.average_speed_kmh.toFixed(1)} km/h</p>
                 <p>Status: <strong style={{ color: traj.overall_status === 'NORMAL' ? 'var(--green)' : 'var(--red)' }}>{traj.overall_status}</strong></p>
                 <p style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{traj.data_mode}</p>
               </>
@@ -571,10 +586,10 @@ export function VehicleSearch() {
                 <div className="alert-row" key={i}>
                   <Clock3 />
                   <span className="alert-copy">
-                    <strong>{s.location} Â· {new Date(s.timestamp).toLocaleTimeString()}</strong>
-                    <small>{s.camera_id}{s.road_name ? ` Â· ${s.road_name}` : ''}</small>
+                    <strong>{s.location} · {new Date(s.timestamp).toLocaleTimeString()}</strong>
+                    <small>{s.camera_id}{s.road_name ? ` · ${s.road_name}` : ''}</small>
                     {traj.hops[i] && (
-                      <em>{traj.hops[i].distance_km.toFixed(2)} km Â· {traj.hops[i].speed_kmh.toFixed(1)} km/h Â· {traj.hops[i].anomaly}</em>
+                      <em>{traj.hops[i].distance_km.toFixed(2)} km · {traj.hops[i].speed_kmh.toFixed(1)} km/h · {traj.hops[i].anomaly}</em>
                     )}
                   </span>
                 </div>
@@ -698,7 +713,7 @@ export function CameraNetwork() {
         <br /><br />
         Free traffic videos:&nbsp;
         <a href="https://www.pexels.com/search/videos/traffic/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>Pexels</a>
-        &nbsp;Â·&nbsp;
+        &nbsp;·&nbsp;
         <a href="https://pixabay.com/videos/search/traffic/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>Pixabay</a>
         &nbsp;(download manually, then upload above)
       </div>
@@ -1015,7 +1030,7 @@ export function SystemHealth() {
 
       {h && (
         <div style={{ marginBottom: 12, fontSize: 11 }}>
-          API version: <strong>{h.version}</strong> Â· {h.api_phase}
+          API version: <strong>{h.version}</strong> · {h.api_phase}
         </div>
       )}
       {!h && !loading && !error && (
@@ -1231,7 +1246,7 @@ export function ManualReviewPage() {
                 </div>
 
                 <p style={{ fontSize: 9, color: '#9aa8b5', marginTop: 6 }}>
-                  Reason: {item.reason} Â· Track: {item.track_id ?? '-'} Â· Created: {new Date(item.created_at).toLocaleString()}
+                  Reason: {item.reason} · Track: {item.track_id ?? '-'} · Created: {new Date(item.created_at).toLocaleString()}
                 </p>
 
                 {/* Inline edit panel */}
@@ -1270,7 +1285,7 @@ export function ManualReviewPage() {
       </div>
 
       <p style={{ fontSize: 9, color: 'var(--muted-foreground)', marginTop: 14 }}>
-        Total: {total} items Â· Showing {items.length} Â· Only CONFIRMED/EDITED items are eligible for blacklist matching.
+        Total: {total} items · Showing {items.length} · Only CONFIRMED/EDITED items are eligible for blacklist matching.
       </p>
     </>
   )

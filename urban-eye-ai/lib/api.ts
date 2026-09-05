@@ -593,6 +593,7 @@ export async function processVideo(
   form.append('file', file)
   form.append('camera_id', cameraId)
   form.append('frame_skip', String(frameSkip))
+  form.append('demo_multi_camera', 'true')   // always on — spreads detections across cameras for demo
 
   return new Promise<VideoIngestResponse>((resolve, reject) => {
     const xhr = new XMLHttpRequest()

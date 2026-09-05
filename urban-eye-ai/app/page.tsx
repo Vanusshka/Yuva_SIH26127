@@ -55,7 +55,6 @@ function PageFrame({ children }: { children: React.ReactNode }) {
         ? `${greeting}, Admin` : children}</h1></div>
       <div className="heading-actions">
         <button className="date-button">{today}</button>
-        <button className="primary-button">Generate Report</button>
       </div>
     </div>
   )

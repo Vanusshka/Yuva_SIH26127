@@ -1,15 +1,14 @@
 """
-Trajectory Explorer — Built-in Demo Dataset
+Trajectory Explorer — Synthetic Demo Dataset
 =============================================
 Self-contained demo data for demonstrating multi-camera vehicle trajectory
 reconstruction in UrbanEye AI (SIH26127).
 
+Source: urbaneye-synthetic-trajectory-demo.csv
+All 10 vehicles, 6 cameras, Hyderabad — 2026-09-05 morning rush hour.
+
 ⚠ DEMO / SAMPLE DATA ONLY
 These observations are NOT from real CCTV cameras.
-They are constructed to demonstrate the Trajectory Explorer feature.
-
-All coordinates are real Hyderabad locations matching the existing camera
-network in cameras.json.
 """
 
 from __future__ import annotations
@@ -17,178 +16,152 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from dataclasses import dataclass, field, asdict
 
-# ── Demo dataset ──────────────────────────────────────────────────────────────
+# ── Camera metadata (shared across vehicles) ──────────────────────────────────
+_CAMERAS = {
+    "CAM-01": {"location_name": "Ameerpet Junction",   "area": "Central Hyderabad",    "road_name": "Ameerpet–Punjagutta Road",         "latitude": 17.4375, "longitude": 78.4483, "direction": "NORTH_BOUND"},
+    "CAM-02": {"location_name": "Punjagutta",           "area": "Central Hyderabad",    "road_name": "Punjagutta–Banjara Hills Road",    "latitude": 17.4289, "longitude": 78.4521, "direction": "SOUTH_BOUND"},
+    "CAM-03": {"location_name": "Banjara Hills",        "area": "South-West Hyderabad", "road_name": "Road No. 12, Banjara Hills",       "latitude": 17.4156, "longitude": 78.4488, "direction": "WEST_BOUND"},
+    "CAM-04": {"location_name": "Jubilee Hills",        "area": "West Hyderabad",       "road_name": "Jubilee Hills Check Post Road",    "latitude": 17.4319, "longitude": 78.4071, "direction": "WEST_BOUND"},
+    "CAM-05": {"location_name": "Madhapur",             "area": "IT Corridor",          "road_name": "Hitech City–Madhapur Road",        "latitude": 17.4483, "longitude": 78.3915, "direction": "NORTH_WEST_BOUND"},
+    "CAM-06": {"location_name": "Gachibowli",           "area": "Financial District",   "road_name": "Gachibowli–Nallagandla Road",      "latitude": 17.4401, "longitude": 78.3489, "direction": "WEST_BOUND"},
+}
 
+def _obs(idx, cam_id, ts, conf):
+    c = _CAMERAS[cam_id]
+    return {
+        "obs_id"       : idx,
+        "camera_id"    : cam_id,
+        "location_name": c["location_name"],
+        "area"         : c["area"],
+        "road_name"    : c["road_name"],
+        "latitude"     : c["latitude"],
+        "longitude"    : c["longitude"],
+        "timestamp"    : f"2026-09-05T{ts}+05:30",
+        "confidence"   : conf,
+        "direction"    : c["direction"],
+    }
+
+# ── Demo dataset — 10 vehicles from CSV ───────────────────────────────────────
 DEMO_VEHICLES = [
     {
-        "vehicle_id"    : "VH-DEMO-001",
-        "plate_number"  : "TS09AB1234",
-        "vehicle_type"  : "Car",
-        "make_model"    : "Honda City (Silver)",
-        "notes"         : "Demo vehicle — 5-camera intercity route",
-        "observations"  : [
-            {
-                "obs_id"         : 1,
-                "camera_id"      : "CAM_001",
-                "location_name"  : "Ameerpet Junction",
-                "area"           : "Central Hyderabad",
-                "road_name"      : "Ameerpet–Punjagutta Road",
-                "latitude"       : 17.4375,
-                "longitude"      : 78.4483,
-                "timestamp"      : "2026-08-28T08:00:00+05:30",
-                "confidence"     : 0.94,
-                "direction"      : "NORTH_BOUND",
-            },
-            {
-                "obs_id"         : 2,
-                "camera_id"      : "CAM_002",
-                "location_name"  : "Begumpet Junction",
-                "area"           : "Central Hyderabad",
-                "road_name"      : "Begumpet–Secunderabad Road",
-                "latitude"       : 17.4432,
-                "longitude"      : 78.4556,
-                "timestamp"      : "2026-08-28T08:09:00+05:30",
-                "confidence"     : 0.91,
-                "direction"      : "NORTH_EAST_BOUND",
-            },
-            {
-                "obs_id"         : 3,
-                "camera_id"      : "CAM_005",
-                "location_name"  : "Secunderabad Railway Station",
-                "area"           : "North Hyderabad",
-                "road_name"      : "Station Road",
-                "latitude"       : 17.4399,
-                "longitude"      : 78.4983,
-                "timestamp"      : "2026-08-28T08:22:00+05:30",
-                "confidence"     : 0.88,
-                "direction"      : "EAST_BOUND",
-            },
-            {
-                "obs_id"         : 4,
-                "camera_id"      : "CAM_013",
-                "location_name"  : "Uppal X Roads",
-                "area"           : "East Hyderabad",
-                "road_name"      : "Uppal–Nagole Corridor",
-                "latitude"       : 17.4052,
-                "longitude"      : 78.5592,
-                "timestamp"      : "2026-08-28T08:41:00+05:30",
-                "confidence"     : 0.85,
-                "direction"      : "EAST_BOUND",
-            },
-            {
-                "obs_id"         : 5,
-                "camera_id"      : "CAM_008",
-                "location_name"  : "LB Nagar Junction",
-                "area"           : "South-East Hyderabad",
-                "road_name"      : "LB Nagar–Nagole Road",
-                "latitude"       : 17.3494,
-                "longitude"      : 78.5520,
-                "timestamp"      : "2026-08-28T08:58:00+05:30",
-                "confidence"     : 0.82,
-                "direction"      : "SOUTH_EAST_BOUND",
-            },
+        "vehicle_id" : "VEH-001",
+        "plate_number": "TS09AB1234",
+        "vehicle_type": "Car",
+        "make_model" : "Sedan",
+        "notes"      : "4-camera route: Ameerpet → Punjagutta → Banjara Hills → Jubilee Hills",
+        "observations": [
+            _obs(1, "CAM-01", "09:02:15", 0.96),
+            _obs(2, "CAM-02", "09:07:42", 0.94),
+            _obs(3, "CAM-03", "09:14:18", 0.97),
+            _obs(4, "CAM-04", "09:21:31", 0.95),
         ],
     },
     {
-        "vehicle_id"    : "VH-DEMO-002",
-        "plate_number"  : "MH12XY5678",
-        "vehicle_type"  : "Motorcycle",
-        "make_model"    : "Royal Enfield Classic 350 (Black)",
-        "notes"         : "Demo vehicle — west Hyderabad route, 3 cameras",
-        "observations"  : [
-            {
-                "obs_id"         : 1,
-                "camera_id"      : "CAM_011",
-                "location_name"  : "Gachibowli Stadium Gate",
-                "area"           : "West Hyderabad",
-                "road_name"      : "Gachibowli–Financial District Road",
-                "latitude"       : 17.4239,
-                "longitude"      : 78.3516,
-                "timestamp"      : "2026-08-28T09:15:00+05:30",
-                "confidence"     : 0.89,
-                "direction"      : "NORTH_WEST_BOUND",
-            },
-            {
-                "obs_id"         : 2,
-                "camera_id"      : "CAM_003",
-                "location_name"  : "Hitech City Entry Gate",
-                "area"           : "West Hyderabad",
-                "road_name"      : "HITEC City Road",
-                "latitude"       : 17.4504,
-                "longitude"      : 78.3806,
-                "timestamp"      : "2026-08-28T09:28:00+05:30",
-                "confidence"     : 0.86,
-                "direction"      : "NORTH_BOUND",
-            },
-            {
-                "obs_id"         : 3,
-                "camera_id"      : "CAM_007",
-                "location_name"  : "Kukatpally Bus Stop",
-                "area"           : "North-West Hyderabad",
-                "road_name"      : "NH-65 Kukatpally",
-                "latitude"       : 17.4849,
-                "longitude"      : 78.4138,
-                "timestamp"      : "2026-08-28T09:44:00+05:30",
-                "confidence"     : 0.79,
-                "direction"      : "NORTH_BOUND",
-            },
+        "vehicle_id" : "VEH-002",
+        "plate_number": "TS08CD5678",
+        "vehicle_type": "Car",
+        "make_model" : "Hatchback",
+        "notes"      : "3-camera route: Ameerpet → Punjagutta → Jubilee Hills",
+        "observations": [
+            _obs(1, "CAM-01", "09:04:21", 0.91),
+            _obs(2, "CAM-02", "09:09:05", 0.93),
+            _obs(3, "CAM-04", "09:21:44", 0.90),
         ],
     },
     {
-        "vehicle_id"    : "VH-DEMO-003",
-        "plate_number"  : "DL01ZZ9999",
-        "vehicle_type"  : "Bus",
-        "make_model"    : "Tata Marcopolo (Blue)",
-        "notes"         : "Demo vehicle — south Hyderabad route (anomalous speed detected)",
-        "observations"  : [
-            {
-                "obs_id"         : 1,
-                "camera_id"      : "CAM_004",
-                "location_name"  : "Charminar Intersection",
-                "area"           : "Old City",
-                "road_name"      : "Charminar Road",
-                "latitude"       : 17.3616,
-                "longitude"      : 78.4747,
-                "timestamp"      : "2026-08-28T10:00:00+05:30",
-                "confidence"     : 0.93,
-                "direction"      : "SOUTH_BOUND",
-            },
-            {
-                "obs_id"         : 2,
-                "camera_id"      : "CAM_009",
-                "location_name"  : "Mehdipatnam Signal",
-                "area"           : "South-West Hyderabad",
-                "road_name"      : "Mehdipatnam–Tolichowki Road",
-                "latitude"       : 17.3929,
-                "longitude"      : 78.4370,
-                "timestamp"      : "2026-08-28T10:14:00+05:30",
-                "confidence"     : 0.90,
-                "direction"      : "NORTH_BOUND",
-            },
-            {
-                "obs_id"         : 3,
-                "camera_id"      : "CAM_012",
-                "location_name"  : "Tolichowki Toll Plaza",
-                "area"           : "South-West Hyderabad",
-                "road_name"      : "Outer Ring Road South",
-                "latitude"       : 17.3963,
-                "longitude"      : 78.4125,
-                "timestamp"      : "2026-08-28T10:22:00+05:30",
-                "confidence"     : 0.87,
-                "direction"      : "WEST_BOUND",
-            },
-            {
-                "obs_id"         : 4,
-                "camera_id"      : "CAM_015",
-                "location_name"  : "Kondapur Signal",
-                "area"           : "West Hyderabad",
-                "road_name"      : "Kondapur–Gachibowli Road",
-                "latitude"       : 17.4600,
-                "longitude"      : 78.3620,
-                "timestamp"      : "2026-08-28T10:36:00+05:30",
-                "confidence"     : 0.83,
-                "direction"      : "NORTH_WEST_BOUND",
-            },
+        "vehicle_id" : "VEH-003",
+        "plate_number": "AP09EF2468",
+        "vehicle_type": "Car",
+        "make_model" : "SUV",
+        "notes"      : "3-camera route: Ameerpet → Banjara Hills → Madhapur (IT corridor)",
+        "observations": [
+            _obs(1, "CAM-01", "09:07:12", 0.92),
+            _obs(2, "CAM-03", "09:14:36", 0.95),
+            _obs(3, "CAM-05", "09:23:10", 0.94),
+        ],
+    },
+    {
+        "vehicle_id" : "VEH-004",
+        "plate_number": "TS10GH1357",
+        "vehicle_type": "Car",
+        "make_model" : "Sedan",
+        "notes"      : "3-camera route: Punjagutta → Banjara Hills → Madhapur",
+        "observations": [
+            _obs(1, "CAM-02", "09:11:08", 0.89),
+            _obs(2, "CAM-03", "09:17:22", 0.93),
+            _obs(3, "CAM-05", "09:28:41", 0.91),
+        ],
+    },
+    {
+        "vehicle_id" : "VEH-005",
+        "plate_number": "KA05JK7890",
+        "vehicle_type": "Car",
+        "make_model" : "SUV",
+        "notes"      : "3-camera route: Ameerpet → Jubilee Hills → Gachibowli (Financial District)",
+        "observations": [
+            _obs(1, "CAM-01", "09:15:30", 0.90),
+            _obs(2, "CAM-04", "09:23:52", 0.94),
+            _obs(3, "CAM-06", "09:34:16", 0.92),
+        ],
+    },
+    {
+        "vehicle_id" : "VEH-006",
+        "plate_number": "TS11LM4821",
+        "vehicle_type": "Motorcycle",
+        "make_model" : "Bike",
+        "notes"      : "3-camera route: Banjara Hills → Madhapur → Gachibowli",
+        "observations": [
+            _obs(1, "CAM-03", "09:20:05", 0.96),
+            _obs(2, "CAM-05", "09:29:27", 0.95),
+            _obs(3, "CAM-06", "09:39:02", 0.93),
+        ],
+    },
+    {
+        "vehicle_id" : "VEH-007",
+        "plate_number": "TS12NP6314",
+        "vehicle_type": "Car",
+        "make_model" : "Hatchback",
+        "notes"      : "3-camera route: Punjagutta → Jubilee Hills → Gachibowli",
+        "observations": [
+            _obs(1, "CAM-02", "09:25:44", 0.88),
+            _obs(2, "CAM-04", "09:32:18", 0.91),
+            _obs(3, "CAM-06", "09:43:55", 0.90),
+        ],
+    },
+    {
+        "vehicle_id" : "VEH-008",
+        "plate_number": "AP10QR9753",
+        "vehicle_type": "Car",
+        "make_model" : "Sedan",
+        "notes"      : "3-camera route: Ameerpet → Banjara Hills → Madhapur",
+        "observations": [
+            _obs(1, "CAM-01", "09:29:11", 0.93),
+            _obs(2, "CAM-03", "09:36:40", 0.92),
+            _obs(3, "CAM-05", "09:45:12", 0.94),
+        ],
+    },
+    {
+        "vehicle_id" : "VEH-009",
+        "plate_number": "TS13ST2046",
+        "vehicle_type": "Car",
+        "make_model" : "Sedan",
+        "notes"      : "3-camera route: Banjara Hills → Jubilee Hills → Gachibowli",
+        "observations": [
+            _obs(1, "CAM-03", "09:33:27", 0.91),
+            _obs(2, "CAM-04", "09:40:03", 0.89),
+            _obs(3, "CAM-06", "09:51:29", 0.92),
+        ],
+    },
+    {
+        "vehicle_id" : "VEH-010",
+        "plate_number": "TS14UV8162",
+        "vehicle_type": "Car",
+        "make_model" : "Sedan",
+        "notes"      : "3-camera route: Ameerpet → Punjagutta → Madhapur",
+        "observations": [
+            _obs(1, "CAM-01", "09:37:16", 0.95),
+            _obs(2, "CAM-02", "09:42:33", 0.93),
+            _obs(3, "CAM-05", "09:52:07", 0.96),
         ],
     },
 ]
@@ -273,8 +246,9 @@ def _build_trajectory(v: dict) -> dict:
         "make_model"    : v["make_model"],
         "data_source"   : "DEMO_DATASET",
         "disclaimer"    : (
-            "DEMO / SAMPLE DATA — These observations are NOT from real CCTV cameras. "
-            "They are built-in sample data to demonstrate the Trajectory Explorer feature."
+            "SYNTHETIC DEMO DATA — Source: urbaneye-synthetic-trajectory-demo.csv. "
+            "These observations simulate a real multi-camera ANPR network across Hyderabad "
+            "on 2026-09-05 morning rush hour. Not from real CCTV cameras."
         ),
         "observations"  : obs,
         "hops"          : hops,

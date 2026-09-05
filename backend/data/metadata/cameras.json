@@ -69,28 +69,6 @@
       "status": "ACTIVE"
     },
     {
-      "camera_id": "CAM_007",
-      "camera_name": "Kukatpally Bus Stop Camera",
-      "latitude": 17.4849,
-      "longitude": 78.4138,
-      "location": "Kukatpally Bus Stop",
-      "road_name": "NH-65 Kukatpally",
-      "direction": "NORTH_BOUND",
-      "zone": "North-West Hyderabad",
-      "status": "ACTIVE"
-    },
-    {
-      "camera_id": "CAM_008",
-      "camera_name": "LB Nagar Junction Camera",
-      "latitude": 17.3494,
-      "longitude": 78.5520,
-      "location": "LB Nagar Junction",
-      "road_name": "LB Nagar–Nagole Road",
-      "direction": "EAST_BOUND",
-      "zone": "South-East Hyderabad",
-      "status": "ACTIVE"
-    },
-    {
       "camera_id": "CAM_009",
       "camera_name": "Mehdipatnam Signal Camera",
       "latitude": 17.3929,
