@@ -274,8 +274,39 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 # Initialise DB tables on startup
 @app.on_event("startup")
 def _startup():
+    import threading
+    import numpy as np
+
     init_db()
     logger.info("SIH26127 backend v%s started — DB initialised.", _API_VERSION)
+
+    # ── Warm up all AI models in a background thread ──────────────────────────
+    # This pre-loads YOLO, plate detector and OCR so the FIRST video upload
+    # does not pay the cold-start penalty (PaddleOCR alone takes 20-30s on
+    # first load). All three models are singletons — warmup here = instant
+    # response on first real request.
+    def _warmup():
+        try:
+            from app.models.vehicle_detector import VehicleDetector
+            from app.models.plate_detector   import PlateDetector
+            from app.models.ocr_engine       import OCREngine
+
+            dummy = np.zeros((64, 64, 3), dtype=np.uint8)
+
+            logger.info("[Startup] Warming up vehicle detector...")
+            VehicleDetector().detect(dummy)
+
+            logger.info("[Startup] Warming up plate detector...")
+            PlateDetector().detect(dummy, vehicle_bbox=None, frame_number=0)
+
+            logger.info("[Startup] Warming up OCR engine (PaddleOCR)...")
+            OCREngine().read_plate(dummy)
+
+            logger.info("[Startup] All models warmed up — first upload will be fast.")
+        except Exception as exc:
+            logger.warning("[Startup] Model warmup failed (non-fatal): %s", exc)
+
+    threading.Thread(target=_warmup, daemon=True).start()
 
 
 # ── System ─────────────────────────────────────────────────────────────────────

@@ -75,7 +75,7 @@ PLATE_CONF_THRESH = 0.20   # lowered from 0.30 — catches more plate candidates
 # ── OCR ───────────────────────────────────────────────────────────────────────
 # Switch to "paddleocr" to use the fine-tuned SVTR_LCNet recognizer.
 # Switch to "easyocr" or "tesseract" for the generic fallbacks.
-OCR_ENGINE           = "easyocr"   # faster and reliable; paddleocr adds 20-30s model load on first call
+OCR_ENGINE           = "paddleocr"  # trained model — warmed up at startup so no cold-start delay
 OCR_LANGUAGES        = ["en"]
 
 # ── PaddleOCR fine-tuned recognizer paths ────────────────────────────────────
@@ -96,7 +96,7 @@ API_VERSION = "0.5.0"
 MAX_UPLOAD_MB = 20
 
 # ── Video ingestion ───────────────────────────────────────────────────────────
-DEFAULT_FRAME_SKIP = 5   # process every 5th frame — good balance of speed vs coverage
+DEFAULT_FRAME_SKIP = 8   # process every 8th frame — fast enough for demo videos
 
 # ── Trajectory thresholds ─────────────────────────────────────────────────────
 SPEED_FAST_KMPH         = 80.0
