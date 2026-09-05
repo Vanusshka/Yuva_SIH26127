@@ -12,13 +12,13 @@ import {
 import { login, isAuthenticated } from '@/src/auth'
 
 const FEATURES = [
-  { icon: Camera,     color: '#08a6d1', bg: '#061e30',
+  { icon: Camera,     color: '#f59e0b', bg: '#261800',
     title: 'Live Camera Network',  desc: '250+ ANPR cameras monitored in real time' },
-  { icon: MapPin,     color: '#24ae76', bg: '#061e18',
+  { icon: MapPin,     color: '#22c55e', bg: '#081a0e',
     title: 'Vehicle Trajectories', desc: 'Track any vehicle across the city network' },
-  { icon: BarChart3,  color: '#eea524', bg: '#1e1606',
+  { icon: BarChart3,  color: '#f59e0b', bg: '#261800',
     title: 'Traffic Analytics',    desc: 'Congestion, density, and peak-hour data' },
-  { icon: ShieldAlert,color: '#db5b5d', bg: '#200e0e',
+  { icon: ShieldAlert,color: '#ef4444', bg: '#1a0606',
     title: 'Instant Alerts',       desc: 'Blacklist hits and anomaly detections' },
 ]
 
@@ -76,7 +76,7 @@ export default function LoginPage() {
           <div className="login-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
             <div className="login-logo-mark"><LocateFixed /></div>
             <div className="login-logo-text">
-              <strong>Urban<span style={{ color: '#55d1eb' }}>Eye</span></strong>
+              <strong>Urban<span style={{ color: '#f59e0b' }}>Eye</span></strong>
               <small>AI TRAFFIC INTELLIGENCE</small>
             </div>
           </div>
@@ -148,10 +148,10 @@ export default function LoginPage() {
 
           {/* Credentials hint */}
           <div style={{
-            marginTop: 20, padding: '14px', background: '#0a1e30',
-            border: '1px solid #1a3d5c', borderRadius: 8,
+            marginTop: 20, padding: '14px', background: '#221a0e',
+            border: '1px solid #3a2e1e', borderRadius: 8,
           }}>
-            <p style={{ color: '#3a7090', fontSize: 9, fontWeight: 700, letterSpacing: '.8px', margin: '0 0 8px' }}>
+            <p style={{ color: '#6a5a40', fontSize: 9, fontWeight: 700, letterSpacing: '.8px', margin: '0 0 8px' }}>
               DEMO ACCOUNTS
             </p>
             {[
@@ -164,9 +164,9 @@ export default function LoginPage() {
                 style={{ display: 'flex', gap: 8, marginBottom: 5, cursor: 'pointer', alignItems: 'center' }}
                 onClick={() => { setUsername(u); setPassword(p); setError(null) }}
               >
-                <code style={{ color: '#08a6d1', fontSize: 10, minWidth: 72 }}>{u}</code>
-                <code style={{ color: '#2a6080', fontSize: 10, minWidth: 88 }}>{p}</code>
-                <span style={{ color: '#2a5070', fontSize: 9 }}>{r}</span>
+                <code style={{ color: '#f59e0b', fontSize: 10, minWidth: 72 }}>{u}</code>
+                <code style={{ color: '#5a4a30', fontSize: 10, minWidth: 88 }}>{p}</code>
+                <span style={{ color: '#4a3a24', fontSize: 9 }}>{r}</span>
               </div>
             ))}
           </div>

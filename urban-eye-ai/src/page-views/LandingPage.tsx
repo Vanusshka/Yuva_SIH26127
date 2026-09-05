@@ -11,48 +11,87 @@ import {
   ArrowRight, Globe, Activity, Eye,
 } from 'lucide-react'
 
-// ── Traffic Light component (kept exactly as Signal House) ─────────────────
+// ── Traffic Light component — large glowing, matches reference image ────────
 function TrafficLight() {
   return (
-    <div style={{
-      width: 140, flexShrink: 0,
-      background: 'linear-gradient(180deg, #1a1208 0%, #0e0c06 100%)',
-      border: '2px solid #3a2e1e',
-      borderRadius: 28,
-      padding: '28px 22px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: 16,
-      boxShadow: '0 8px 48px #00000088, inset 0 1px 0 #4a3a2440',
-    }}>
-      {/* Red — STOP */}
+    <div style={{ position: 'relative' }}>
+      {/* Ambient background glow behind the whole signal */}
       <div style={{
-        width: 80, height: 80, borderRadius: '50%',
-        background: 'radial-gradient(circle at 35% 35%, #8b3030, #3a0808)',
-        boxShadow: '0 0 28px #c0404044, inset 0 2px 6px #00000060',
-        border: '2px solid #4a1010',
+        position: 'absolute', inset: '-60px',
+        background: 'radial-gradient(ellipse 60% 70% at 65% 50%, #c9a84c18, transparent 70%)',
+        pointerEvents: 'none',
       }} />
-      {/* Amber — SLOW */}
+
+      {/* Housing */}
       <div style={{
-        width: 80, height: 80, borderRadius: '50%',
-        background: 'radial-gradient(circle at 35% 35%, #c9a84c, #5a3a08)',
-        boxShadow: '0 0 36px #c9a84c66, inset 0 2px 6px #00000060',
-        border: '2px solid #6a4a18',
-      }} />
-      {/* Green — GO */}
-      <div style={{
-        width: 80, height: 80, borderRadius: '50%',
-        background: 'radial-gradient(circle at 35% 35%, #4a9e6a, #0e2818',
-        boxShadow: '0 0 28px #4a9e6a44, inset 0 2px 6px #00000060',
-        border: '2px solid #1a4428',
-      }} />
-      {/* pole */}
-      <div style={{
-        width: 6, height: 28, borderRadius: 3,
-        background: 'linear-gradient(180deg, #2a2010, #1a1208)',
-        marginTop: -4,
-      }} />
+        width: 180,
+        background: 'linear-gradient(180deg, #1a1410 0%, #0e0c08 100%)',
+        border: '1.5px solid #3a3020',
+        borderRadius: 36,
+        padding: '32px 28px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 20,
+        boxShadow: '0 12px 60px #00000099, inset 0 1px 0 #4a3a2030, 0 0 40px #c9a84c08',
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        {/* Red — STOP — dim, not active */}
+        <div style={{ position: 'relative', width: 110, height: 110 }}>
+          {/* soft glow behind */}
+          <div style={{
+            position: 'absolute', inset: -20,
+            background: 'radial-gradient(circle, #8b303040 0%, transparent 70%)',
+            borderRadius: '50%',
+          }} />
+          <div style={{
+            width: 110, height: 110, borderRadius: '50%',
+            background: 'radial-gradient(circle at 38% 35%, #7a2828 0%, #3a0c0c 55%, #1a0606 100%)',
+            boxShadow: '0 0 22px #8b303035, inset 0 3px 8px #00000070, inset -2px -2px 10px #6a202010',
+            border: '1.5px solid #4a1818',
+          }} />
+        </div>
+
+        {/* Amber — SLOW — warm glow, most visible */}
+        <div style={{ position: 'relative', width: 110, height: 110 }}>
+          {/* large soft ambient glow */}
+          <div style={{
+            position: 'absolute', inset: -28,
+            background: 'radial-gradient(circle, #c9a84c55 0%, #c9a84c20 40%, transparent 70%)',
+            borderRadius: '50%',
+          }} />
+          <div style={{
+            width: 110, height: 110, borderRadius: '50%',
+            background: 'radial-gradient(circle at 38% 35%, #d4a840 0%, #8a6820 50%, #3a2c08 100%)',
+            boxShadow: '0 0 40px #c9a84c60, 0 0 80px #c9a84c20, inset 0 3px 8px #00000050',
+            border: '1.5px solid #6a5018',
+          }} />
+        </div>
+
+        {/* Green — GO — active bright glow */}
+        <div style={{ position: 'relative', width: 110, height: 110 }}>
+          {/* large soft ambient glow */}
+          <div style={{
+            position: 'absolute', inset: -28,
+            background: 'radial-gradient(circle, #22c55e50 0%, #22c55e20 40%, transparent 70%)',
+            borderRadius: '50%',
+          }} />
+          <div style={{
+            width: 110, height: 110, borderRadius: '50%',
+            background: 'radial-gradient(circle at 38% 35%, #3dcc72 0%, #1a8040 50%, #0a3018 100%)',
+            boxShadow: '0 0 40px #22c55e70, 0 0 80px #22c55e25, inset 0 3px 8px #00000050',
+            border: '1.5px solid #1a5028',
+          }} />
+        </div>
+
+        {/* Pole */}
+        <div style={{
+          width: 8, height: 36, borderRadius: 4,
+          background: 'linear-gradient(180deg, #2a2010, #120e06)',
+          marginTop: -6,
+        }} />
+      </div>
     </div>
   )
 }
@@ -134,12 +173,8 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* Nav links */}
-        <div style={{ display: 'flex', gap: 32 }}>
-          {['The Light', 'Rhythm', 'The Garage'].map(l => (
-            <span key={l} className="sh-nav-link">{l}</span>
-          ))}
-        </div>
+        {/* Nav links — removed per design */}
+        <div style={{ flex: 1 }} />
 
         {/* CTA */}
         <button className="sh-cta-btn" onClick={() => navigate('/login')}>

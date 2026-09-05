@@ -6,23 +6,23 @@
 
 :root {
   color-scheme: dark;
-  /* ── Signal House palette — warm charcoal, cream, amber-gold ── */
-  --background: #1a1208;        /* Signal House dark brown base */
+  /* ── Traffic Signal palette — red · yellow · green on dark charcoal ── */
+  --background: #1a1208;        /* warm dark charcoal base */
   --foreground: #e8dfc8;        /* warm cream text */
-  --card: #221a0e;              /* slightly lighter warm card */
+  --card: #221a0e;              /* warm card surface */
   --card-foreground: #e8dfc8;
-  --muted: #2a2015;             /* muted card / input background */
-  --muted-foreground: #8a7a60;  /* warm muted text */
+  --muted: #2a2015;             /* muted background */
+  --muted-foreground: #8a7a60;  /* muted text */
   --border: #3a2e1e;            /* warm brown border */
-  --primary: #c9a84c;           /* Signal House amber-gold */
+  --primary: #f59e0b;           /* 🟡 TRAFFIC AMBER — primary CTA */
   --primary-foreground: #1a1208;
-  --cyan: #c9a84c;              /* repurposed as gold throughout */
-  --navy: #120e06;              /* deepest sidebar background */
+  --cyan: #f59e0b;              /* alias → yellow throughout */
+  --navy: #120e06;              /* sidebar base */
   --navy-muted: #6a5a40;
-  --amber: #e8a020;             /* traffic amber — warnings */
-  --green: #4a9e6a;             /* traffic green — go / normal */
-  --red: #c04040;               /* traffic red — stop / critical */
-  --purple: #9a7aaa;
+  --amber: #f59e0b;             /* 🟡 yellow / slow */
+  --green: #22c55e;             /* 🟢 green  / go */
+  --red:   #ef4444;             /* 🔴 red    / stop / critical */
+  --purple: #a78bfa;
   --radius: 0.65rem;
 }
 
@@ -143,53 +143,53 @@ button { cursor: pointer; }
 .land-road-strip { width: 100%; height: 3px; background: linear-gradient(90deg, transparent 0%, #08a6d1 20%, #05e5c8 50%, #08a6d1 80%, transparent 100%); background-size: 200% 100%; animation: road-anim 3s linear infinite; }
 @keyframes road-anim { 0%{ background-position: 200% 0 } 100%{ background-position: -200% 0 } }
 
-/* ── Login page ───────────────────────────────────────────────────────────── */
-.login-shell { min-height: 100vh; background: #060d18; display: flex; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-.login-left { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 48px; background: #060d18; position: relative; overflow: hidden; }
-.login-bg-grid { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent, transparent 59px, #0d2035 60px), repeating-linear-gradient(0deg, transparent, transparent 59px, #0d2035 60px); opacity: .4; }
-.login-bg-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 50%, #08a6d114 0%, transparent 70%); }
+/* ── Login page — Signal House warm theme ─────────────────────────────────── */
+.login-shell { min-height: 100vh; background: #1a1208; display: flex; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.login-left { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 48px; background: #1a1208; position: relative; overflow: hidden; }
+.login-bg-grid { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent, transparent 59px, #2a2010 60px), repeating-linear-gradient(0deg, transparent, transparent 59px, #2a2010 60px); opacity: .25; }
+.login-bg-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 50%, #f59e0b08 0%, transparent 70%); }
 .login-form-wrap { position: relative; z-index: 1; width: 100%; max-width: 400px; }
 .login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 44px; text-decoration: none; }
-.login-logo-mark { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, #0c7f9d, #05c5ef); display: grid; place-items: center; box-shadow: 0 0 20px #08a6d155; }
-.login-logo-mark svg { width: 22px; color: white; }
-.login-logo-text strong { display: block; font-size: 20px; color: white; letter-spacing: -.5px; }
-.login-logo-text small { display: block; font-size: 8px; letter-spacing: 1.8px; color: #4a7a9a; margin-top: 2px; }
-.login-title { font-size: 26px; font-weight: 800; color: white; letter-spacing: -.6px; margin: 0 0 6px; }
-.login-sub { font-size: 12px; color: #4a7090; margin: 0 0 34px; }
+.login-logo-mark { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, #b45309, #f59e0b); display: grid; place-items: center; box-shadow: 0 0 20px #f59e0b40; }
+.login-logo-mark svg { width: 22px; color: #1a1208; }
+.login-logo-text strong { display: block; font-size: 20px; color: #e8dfc8; letter-spacing: -.5px; }
+.login-logo-text small { display: block; font-size: 8px; letter-spacing: 1.8px; color: #5a4a30; margin-top: 2px; }
+.login-title { font-size: 26px; font-weight: 800; color: #e8dfc8; letter-spacing: -.6px; margin: 0 0 6px; }
+.login-sub { font-size: 12px; color: #6a5a40; margin: 0 0 34px; }
 .login-field { margin-bottom: 18px; }
-.login-label { display: block; font-size: 10px; font-weight: 700; color: #5a8aa8; letter-spacing: .8px; margin-bottom: 7px; }
-.login-input { width: 100%; padding: 11px 14px; background: #0b1e30; border: 1px solid #1a3d5c; border-radius: 8px; color: #d0e8f7; font-size: 13px; outline: none; transition: border-color .2s, box-shadow .2s; box-sizing: border-box; }
-.login-input:focus { border-color: #08a6d1; box-shadow: 0 0 0 3px #08a6d122; }
-.login-input::placeholder { color: #2a5070; }
+.login-label { display: block; font-size: 10px; font-weight: 700; color: #8a7a60; letter-spacing: .8px; margin-bottom: 7px; }
+.login-input { width: 100%; padding: 11px 14px; background: #221a0e; border: 1px solid #3a2e1e; border-radius: 8px; color: #e8dfc8; font-size: 13px; outline: none; transition: border-color .2s, box-shadow .2s; box-sizing: border-box; }
+.login-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px #f59e0b18; }
+.login-input::placeholder { color: #4a3a24; }
 .login-input-wrap { position: relative; }
-.login-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: 0; color: #2a5070; cursor: pointer; padding: 4px; display: flex; align-items: center; }
-.login-error { display: flex; align-items: center; gap: 8px; padding: 11px 14px; background: #1a0f0f; border: 1px solid #5a2020; border-radius: 8px; color: #e07070; font-size: 11px; margin-bottom: 16px; }
-.login-btn { width: 100%; padding: 13px; background: #0c7f9d; border: 1px solid #0c7f9d; border-radius: 8px; color: white; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.login-btn:hover:not(:disabled) { background: #0d9abf; box-shadow: 0 0 24px #08a6d155; transform: translateY(-1px); }
+.login-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: 0; color: #4a3a24; cursor: pointer; padding: 4px; display: flex; align-items: center; }
+.login-error { display: flex; align-items: center; gap: 8px; padding: 11px 14px; background: #1a0606; border: 1px solid #5a1010; border-radius: 8px; color: #ef4444; font-size: 11px; margin-bottom: 16px; }
+.login-btn { width: 100%; padding: 13px; background: #f59e0b; border: 1px solid #f59e0b; border-radius: 8px; color: #1a1208; font-size: 13px; font-weight: 800; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.login-btn:hover:not(:disabled) { background: #fbbf24; box-shadow: 0 0 24px #f59e0b50; transform: translateY(-1px); }
 .login-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-.login-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: #1e3d5c; font-size: 10px; }
-.login-divider::before,.login-divider::after { content:''; flex:1; height:1px; background:#1a3050; }
-.login-demo-btn { width: 100%; padding: 11px; background: transparent; border: 1px solid #1a3d5c; border-radius: 8px; color: #5a8aa8; font-size: 12px; cursor: pointer; transition: all .2s; }
-.login-demo-btn:hover { border-color: #2a6a92; color: #8ab8d4; background: #0b1e30; }
-.login-back { display: flex; align-items: center; gap: 6px; color: #3a6080; font-size: 11px; text-decoration: none; margin-top: 28px; transition: color .2s; cursor: pointer; background: transparent; border: 0; padding: 0; }
-.login-back:hover { color: #7fa3c0; }
-.login-right { width: 480px; flex-shrink: 0; background: linear-gradient(160deg, #0b2540, #05111e); border-left: 1px solid #1a3050; display: flex; flex-direction: column; justify-content: center; padding: 56px 52px; position: relative; overflow: hidden; }
-.login-right-glow { position: absolute; top: -80px; right: -80px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(#08a6d118, transparent 70%); }
-.login-right h2 { font-size: 28px; font-weight: 800; color: white; letter-spacing: -.8px; margin: 0 0 12px; position: relative; z-index: 1; }
-.login-right p { font-size: 12px; color: #4a7090; line-height: 1.7; margin: 0 0 36px; position: relative; z-index: 1; }
+.login-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: #3a2e1e; font-size: 10px; }
+.login-divider::before,.login-divider::after { content:''; flex:1; height:1px; background:#2a2010; }
+.login-demo-btn { width: 100%; padding: 11px; background: transparent; border: 1px solid #3a2e1e; border-radius: 8px; color: #6a5a40; font-size: 12px; cursor: pointer; transition: all .2s; }
+.login-demo-btn:hover { border-color: #f59e0b; color: #f59e0b; background: #221a0e; }
+.login-back { display: flex; align-items: center; gap: 6px; color: #4a3a24; font-size: 11px; text-decoration: none; margin-top: 28px; transition: color .2s; cursor: pointer; background: transparent; border: 0; padding: 0; }
+.login-back:hover { color: #8a7a60; }
+.login-right { width: 480px; flex-shrink: 0; background: linear-gradient(160deg, #221a0e, #1a1208); border-left: 1px solid #2a2010; display: flex; flex-direction: column; justify-content: center; padding: 56px 52px; position: relative; overflow: hidden; }
+.login-right-glow { position: absolute; top: -80px; right: -80px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(#f59e0b10, transparent 70%); }
+.login-right h2 { font-size: 28px; font-weight: 800; color: #e8dfc8; letter-spacing: -.8px; margin: 0 0 12px; position: relative; z-index: 1; }
+.login-right p { font-size: 12px; color: #6a5a40; line-height: 1.7; margin: 0 0 36px; position: relative; z-index: 1; }
 .login-features { display: flex; flex-direction: column; gap: 14px; position: relative; z-index: 1; }
 .login-feat { display: flex; align-items: flex-start; gap: 13px; }
 .login-feat-icon { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0; }
 .login-feat-icon svg { width: 17px; }
-.login-feat strong { display: block; font-size: 12px; color: #c0daf0; font-weight: 700; margin-bottom: 3px; }
-.login-feat p { font-size: 10px; color: #3e6880; margin: 0; line-height: 1.5; }
+.login-feat strong { display: block; font-size: 12px; color: #d8c8a0; font-weight: 700; margin-bottom: 3px; }
+.login-feat p { font-size: 10px; color: #5a4a30; margin: 0; line-height: 1.5; }
 .login-right-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 36px; position: relative; z-index: 1; }
-.login-right-stat { background: #091828; border: 1px solid #1a3050; border-radius: 9px; padding: 16px; }
-.login-right-stat strong { display: block; font-size: 22px; font-weight: 800; color: #08a6d1; letter-spacing: -.5px; }
-.login-right-stat span { font-size: 9px; color: #3a6080; letter-spacing: .5px; margin-top: 4px; display: block; }
+.login-right-stat { background: #1a1208; border: 1px solid #3a2e1e; border-radius: 9px; padding: 16px; }
+.login-right-stat strong { display: block; font-size: 22px; font-weight: 800; color: #f59e0b; letter-spacing: -.5px; }
+.login-right-stat span { font-size: 9px; color: #4a3a24; letter-spacing: .5px; margin-top: 4px; display: block; }
 
 /* ── Auth gate ────────────────────────────────────────────────────────────── */
-.auth-checking { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #060d18; color: #4a7090; font-size: 13px; gap: 10px; }
+.auth-checking { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #1a1208; color: #6a5a40; font-size: 13px; gap: 10px; }
 
 /* responsive for landing/login */
 @media (max-width: 900px) {
@@ -454,8 +454,8 @@ div[style*="background: '#f6f9fb'"] {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SIGNAL HOUSE THEME — warm charcoal · cream · amber-gold · traffic signals
-   Inspired by: stop (red) · slow (amber) · go (green)
+   TRAFFIC SIGNAL THEME — 🔴 red · 🟡 yellow · 🟢 green on warm charcoal
+   Stop = red  ·  Slow = yellow  ·  Go = green
    All overrides are additive. Zero functionality removed.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -465,49 +465,49 @@ body { background: var(--background); color: var(--foreground); }
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
 .sidebar { background: #120e06; border-right: 1px solid #2a2010; }
 .brand { border-bottom: 1px solid #2a2010; background: #120e06; }
-.brand-mark { background: linear-gradient(135deg, #7a5a18, #c9a84c); color: #1a1208; box-shadow: 0 0 16px #c9a84c30; }
+.brand-mark { background: linear-gradient(135deg, #b45309, #f59e0b); color: #120e06; box-shadow: 0 0 16px #f59e0b30; }
 .brand strong { color: #e8dfc8; }
-.brand strong span { color: #c9a84c; }
+.brand strong span { color: #f59e0b; }
 .brand small { color: #5a4a30; }
 .workspace-select { background: #1e1608; border-color: #3a2e1e; color: #c8b890; }
 .eyebrow { color: #6a5a40; }
 .nav-item { color: #6a5a40; }
 .nav-item:hover { background: #1e1608; color: #c8b890; }
-.nav-item.active { background: #2a1e08; color: #e8dfc8; box-shadow: inset 3px 0 #c9a84c; }
-.nav-item.active svg { color: #c9a84c; }
+.nav-item.active { background: #2a1e08; color: #e8dfc8; box-shadow: inset 3px 0 #f59e0b; }
+.nav-item.active svg { color: #f59e0b; }
 .nav-chevron { color: #4a3a24 !important; }
-.nav-item b { background: #3a2808; color: #c9a84c; }
+.nav-item b { background: #3a2808; color: #f59e0b; }
 .api-status { border-color: #2a2010; }
 .api-status strong { color: #c8b890; }
 .api-status small { color: #6a5a40; }
 .user-card { color: #c8b890; }
-.avatar, .topbar-avatar { background: #2a1e08; color: #c9a84c; }
+.avatar, .topbar-avatar { background: #2a1e08; color: #f59e0b; }
 .sidebar-bottom { border-top: 1px solid #2a2010; }
-.pulse, .status-dot { background: var(--green); box-shadow: 0 0 0 4px #1a2e1a; }
+.pulse, .status-dot { background: #22c55e; box-shadow: 0 0 0 4px #0e2e1a; }
 
 /* ── Topbar ───────────────────────────────────────────────────────────────── */
 .topbar { background: #1a1208; border-bottom: 1px solid #2a2010; }
-.topbar-avatar { background: #2a1e08; color: #c9a84c; }
-.live-indicator { color: #4a9e6a; }
-.live-indicator span { background: #4a9e6a; box-shadow: 0 0 6px #4a9e6a66; }
+.topbar-avatar { background: #2a1e08; color: #f59e0b; }
+.live-indicator { color: #22c55e; letter-spacing: .8px; }
+.live-indicator span { background: #22c55e; box-shadow: 0 0 7px #22c55e88; }
 .topbar-note { color: #6a5a40; }
 .topbar-separator { background: #2a2010; }
 .notification-button svg, .help-button svg { color: #6a5a40; }
-.notification-button span { background: var(--red); }
+.notification-button span { background: #ef4444; }
 
 /* ── Page heading ─────────────────────────────────────────────────────────── */
 .page-heading h1 { color: #e8dfc8; letter-spacing: -.8px; }
 .breadcrumbs { color: #4a3a24; }
 .breadcrumbs strong { color: #6a5a40; }
 .date-button { background: #1e1608; border-color: #3a2e1e; color: #8a7a60; }
-.date-button:hover { border-color: #c9a84c; color: #c9a84c; }
-.primary-button { background: #c9a84c; border-color: #c9a84c; color: #1a1208; box-shadow: 0 0 16px #c9a84c25; font-weight: 800; }
-.primary-button:hover { background: #dab85c; box-shadow: 0 0 24px #c9a84c45; }
+.date-button:hover { border-color: #f59e0b; color: #f59e0b; }
+.primary-button { background: #f59e0b; border-color: #f59e0b; color: #120e06; box-shadow: 0 0 18px #f59e0b28; font-weight: 800; }
+.primary-button:hover { background: #fbbf24; box-shadow: 0 0 28px #f59e0b55; }
 .icon-button { background: #1e1608; border-color: #3a2e1e; color: #8a7a60; }
-.icon-button:hover { border-color: #c9a84c; color: #c9a84c; }
-.text-button { color: #c9a84c; background: transparent; }
+.icon-button:hover { border-color: #f59e0b; color: #f59e0b; }
+.text-button { color: #f59e0b; background: transparent; }
 
-/* ── KPI cards ────────────────────────────────────────────────────────────── */
+/* ── KPI cards — rotating accent colours per position ────────────────────── */
 .kpi-card {
   background: linear-gradient(145deg, #221a0e, #1c1408);
   border: 1px solid #3a2e1e;
@@ -515,27 +515,29 @@ body { background: var(--background); color: var(--foreground); }
   position: relative;
   overflow: hidden;
 }
-.kpi-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #c9a84c50, transparent);
-}
+/* Yellow top bar — primary KPI */
+.kpi-card:nth-child(1)::before { content:''; position:absolute; top:0;left:0;right:0;height:2px; background:linear-gradient(90deg,transparent,#f59e0b88,transparent); }
+/* Green top bar — second KPI */
+.kpi-card:nth-child(2)::before { content:''; position:absolute; top:0;left:0;right:0;height:2px; background:linear-gradient(90deg,transparent,#22c55e88,transparent); }
+/* Red top bar — third KPI */
+.kpi-card:nth-child(3)::before { content:''; position:absolute; top:0;left:0;right:0;height:2px; background:linear-gradient(90deg,transparent,#ef444488,transparent); }
+/* Yellow top bar — fourth KPI */
+.kpi-card:nth-child(4)::before { content:''; position:absolute; top:0;left:0;right:0;height:2px; background:linear-gradient(90deg,transparent,#f59e0b88,transparent); }
+
 .kpi-value { color: #e8dfc8; }
 .kpi-label { color: #6a5a40; }
-.kpi-trend { color: var(--green); }
+.kpi-trend { color: #22c55e; }
 .kpi-trend span { color: #5a4a30; }
-.kpi-trend.down { color: var(--amber); }
+.kpi-trend.down { color: #f59e0b; }
 .kpi-progress { background: #2a2015; }
 .kpi-subtext { color: #5a4a30; }
 
-/* KPI icon backgrounds — traffic-light themed */
-.cyan-bg   { color: #c9a84c; background: #2a2008; border: 1px solid #3a2e18; }
-.amber-bg  { color: #e8a020; background: #261808; border: 1px solid #3a2808; }
-.green-bg  { color: #4a9e6a; background: #0e2018; border: 1px solid #1a3820; }
-.purple-bg { color: #9a7aaa; background: #1a1222; border: 1px solid #2a1e38; }
-.red-bg    { color: #c04040; background: #220808; border: 1px solid #381010; }
+/* KPI icon backgrounds — traffic-signal tricolor */
+.cyan-bg   { color: #f59e0b; background: #261800; border: 1px solid #3a2800; }
+.amber-bg  { color: #f59e0b; background: #261800; border: 1px solid #3a2800; }
+.green-bg  { color: #22c55e; background: #081a0e; border: 1px solid #143820; }
+.red-bg    { color: #ef4444; background: #1a0606; border: 1px solid #380c0c; }
+.purple-bg { color: #a78bfa; background: #12101e; border: 1px solid #221e38; }
 
 /* ── Panels ───────────────────────────────────────────────────────────────── */
 .panel {
@@ -543,12 +545,12 @@ body { background: var(--background); color: var(--foreground); }
   border: 1px solid #3a2e1e;
   box-shadow: 0 2px 20px #00000055;
 }
-.panel-header h2 { color: #d8c8a0; font-weight: 700; letter-spacing: -.2px; }
+.panel-header h2 { color: #d8c8a0; font-weight: 700; }
 .panel-header p { color: #6a5a40; font-size: 10px; }
 .segmented { border-color: #3a2e1e; }
 .segmented button { background: #1e1608; color: #5a4a30; }
 .segmented button + button { border-left-color: #3a2e1e; }
-.segmented button.selected { background: #2a1e08; color: #c9a84c; }
+.segmented button.selected { background: #2a1800; color: #f59e0b; }
 
 /* ── Tables ───────────────────────────────────────────────────────────────── */
 th { color: #5a4a30; border-bottom-color: #3a2e1e; font-size: 9px; letter-spacing: 1px; }
@@ -559,30 +561,31 @@ tr:last-child td { border-bottom: 0; }
 .table-search input { color: #8a7a60; background: transparent; }
 .table-search input::placeholder { color: #3a2e1e; }
 
-/* Plate display — like a real number plate on asphalt */
+/* Plate display */
 .plate { color: #e8dfc8; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: .5px; }
-.plate-mark { background: #c9a84c; }
-.plate-mark.amber { background: var(--amber); }
-.plate-mark.green { background: var(--green); }
-.confidence { color: #4a9e6a; font-weight: 700; }
+.plate-mark { background: #f59e0b; }
+.plate-mark.amber { background: #f59e0b; }
+.plate-mark.green { background: #22c55e; }
+.plate-mark.red   { background: #ef4444; }
+.confidence { color: #22c55e; font-weight: 700; }
 .location svg { color: #5a4a30; }
 
-/* ── Status pills — traffic signal colours ───────────────────────────────── */
-.status-pill { background: #0e2018; color: #4a9e6a; border: 1px solid #1a3820; }
-.status-pill.amber { background: #261808; color: #e8a020; border: 1px solid #3a2808; }
-.status-pill.red   { background: #220808; color: #c04040; border: 1px solid #381010; }
-.status-pill.cyan  { background: #2a2008; color: #c9a84c; border: 1px solid #3a2e18; }
+/* ── Status pills — traffic tricolor ──────────────────────────────────────── */
+.status-pill        { background: #081a0e; color: #22c55e; border: 1px solid #143820; }
+.status-pill.amber  { background: #261800; color: #f59e0b; border: 1px solid #3a2800; }
+.status-pill.red    { background: #1a0606; color: #ef4444; border: 1px solid #380c0c; }
+.status-pill.cyan   { background: #261800; color: #f59e0b; border: 1px solid #3a2800; }
 
 /* ── Alert rows ───────────────────────────────────────────────────────────── */
 .alert-row { border-bottom-color: #2a2010; }
 .alert-row:hover { background: #1e1608; }
-.alert-icon.critical { color: #c04040; background: #220808; border: 1px solid #381010; }
-.alert-icon.warning  { color: #e8a020; background: #261808; border: 1px solid #3a2808; }
-.alert-icon.info     { color: #c9a84c; background: #2a2008; border: 1px solid #3a2e18; }
+.alert-icon.critical { color: #ef4444; background: #1a0606; border: 1px solid #380c0c; }
+.alert-icon.warning  { color: #f59e0b; background: #261800; border: 1px solid #3a2800; }
+.alert-icon.info     { color: #22c55e; background: #081a0e; border: 1px solid #143820; }
 .alert-copy strong { color: #c8b890; }
 .alert-copy small { color: #5a4a30; }
 .alert-copy em { color: #3a2e20; }
-.alert-footer { background: #1e1608; border-color: #3a2e1e; color: #c9a84c; }
+.alert-footer { background: #1e1608; border-color: #3a2e1e; color: #f59e0b; }
 .alert-row > svg { color: #3a2e20; }
 
 /* ── Footer ───────────────────────────────────────────────────────────────── */
@@ -598,13 +601,13 @@ select, textarea {
 }
 input::placeholder, textarea::placeholder { color: #3a2e1e; }
 input:focus, select:focus, textarea:focus {
-  border-color: #c9a84c;
-  box-shadow: 0 0 0 3px #c9a84c18;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px #f59e0b18;
   outline: none;
 }
 select option { background: #1e1608; color: #c8b890; }
 
-/* ── Map panel (decorative dashboard map) ────────────────────────────────── */
+/* ── Map panel ────────────────────────────────────────────────────────────── */
 .map-panel { background: #120e06; }
 .map-art {
   background-image:
@@ -617,40 +620,34 @@ select option { background: #1e1608; color: #c8b890; }
 .map-search input { color: #8a7a60; }
 .map-legend { background: #1e1608ee; color: #5a4a30; }
 .map-label { color: #3a2e18; }
-.legend-dot { background: var(--green); }
-.legend-dot.alert { background: var(--amber); }
 
 /* ── City Map (Leaflet) ──────────────────────────────────────────────────── */
 .city-map-panel { background: #221a0e; border-color: #3a2e1e; }
 .city-map-toolbar { border-bottom-color: #3a2e1e; }
 .city-map-toolbar button { background: #1e1608; border-color: #3a2e1e; color: #8a7a60; }
-.city-map-toolbar button:hover { border-color: #c9a84c; color: #c9a84c; }
-.city-map-toolbar button.active { border-color: #c9a84c; background: #2a2008; color: #c9a84c; }
+.city-map-toolbar button:hover { border-color: #f59e0b; color: #f59e0b; }
+.city-map-toolbar button.active { border-color: #f59e0b; background: #261800; color: #f59e0b; }
 .city-map-status { color: #3a2e1e; border-top-color: #3a2e1e; }
 .city-map-container .leaflet-container { background: #120e06; }
-/* Warm sepia tone for map tiles — like golden hour */
 .city-map-container .leaflet-tile-pane { filter: brightness(0.5) saturate(0.3) sepia(0.4) hue-rotate(10deg); }
 
-/* Camera marker dots — traffic-light colours with warm glow */
-.cam-dot.low    { background: #4a9e6a; box-shadow: 0 0 7px #4a9e6a70; border-color: #2a3a28; }
-.cam-dot.medium { background: #c9a84c; box-shadow: 0 0 7px #c9a84c70; border-color: #3a3018; }
-.cam-dot.high   { background: #e8a020; box-shadow: 0 0 7px #e8a02070; border-color: #3a2808; }
-.cam-dot.severe { background: #c04040; box-shadow: 0 0 7px #c0404070; border-color: #381010; }
-.cam-dot.default{ background: #c9a84c; box-shadow: 0 0 7px #c9a84c70; border-color: #3a3018; }
+/* ── Camera marker dots — full traffic tricolor ──────────────────────────── */
+.cam-dot.low     { background: #22c55e; box-shadow: 0 0 7px #22c55e88; border-color: #0e2e1a; }
+.cam-dot.medium  { background: #f59e0b; box-shadow: 0 0 7px #f59e0b88; border-color: #3a2800; }
+.cam-dot.high    { background: #f97316; box-shadow: 0 0 7px #f9731688; border-color: #3a1800; }
+.cam-dot.severe  { background: #ef4444; box-shadow: 0 0 7px #ef444488; border-color: #380c0c; }
+.cam-dot.default { background: #f59e0b; box-shadow: 0 0 7px #f59e0b88; border-color: #3a2800; }
 .cam-dot.inactive{ background: #4a3a24; }
 
-/* ── Upload zone drag-over ────────────────────────────────────────────────── */
-.upload-zone-active { border-color: #c9a84c !important; background: #1e1608 !important; }
+/* ── Upload zone ──────────────────────────────────────────────────────────── */
+.upload-zone-active { border-color: #f59e0b !important; background: #1e1608 !important; }
 
 /* ── Chart grid lines ─────────────────────────────────────────────────────── */
 .gridlines i { border-top-color: #3a2e1e; }
 
-/* Bar chart gradient — amber-gold for traffic data */
-/* (applied via inline style in Pages.tsx — these override the hardcoded colors) */
-
 /* ── NL Query chips ───────────────────────────────────────────────────────── */
 .nl-chip { background: #1e1608 !important; border-color: #3a2e1e !important; color: #6a5a40 !important; }
-.nl-chip:hover { background: #c9a84c !important; color: #1a1208 !important; border-color: #c9a84c !important; }
+.nl-chip:hover { background: #f59e0b !important; color: #120e06 !important; border-color: #f59e0b !important; }
 .nl-table td { border-bottom-color: #2a2010; }
 .nl-table tr:hover td { background: #1e1608; }
 
@@ -658,36 +655,28 @@ select option { background: #1e1608; color: #c8b890; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: #1a1208; }
 ::-webkit-scrollbar-thumb { background: #3a2e1e; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #c9a84c55; }
+::-webkit-scrollbar-thumb:hover { background: #f59e0b55; }
 
-/* ── Map nodes (overview decorative map) ──────────────────────────────────── */
-.map-node { background: #c9a84c18; }
-.map-node span { background: var(--green); border-color: #3a2e1e; }
-.node-4 span { background: var(--amber); }
+/* ── Map nodes ────────────────────────────────────────────────────────────── */
+.map-node { background: #f59e0b18; }
+.map-node span { background: #22c55e; border-color: #3a2e1e; }
+.node-4 span { background: #f59e0b; }
 
-/* ── Grid lines & chart text ──────────────────────────────────────────────── */
+/* ── Chart axis text ──────────────────────────────────────────────────────── */
 .chart-y, .chart-x { color: #5a4a30; }
 
-/* ── Inline component color overrides ────────────────────────────────────── */
-/* These target the remaining components that use inline style strings */
-/* Select/input inside panels */
-.panel select, .panel input[type="text"], .panel input[type="search"],
-.panel input[type="file"] {
+/* ── Panel selects/inputs ─────────────────────────────────────────────────── */
+.panel select, .panel input[type="text"], .panel input[type="search"] {
   background: #1e1608 !important;
   color: #c8b890 !important;
   border-color: #3a2e1e !important;
 }
-
-/* Progress bar tracks */
 div[style*="background: #1a2f44"],
-div[style*="background:#1a2f44"] {
-  background: #2a2015 !important;
-}
+div[style*="background:#1a2f44"] { background: #2a2015 !important; }
 
-/* Stage row backgrounds in VideoUpload */
-div[style*="background: '#dff5ec'"] { background: #0e2018 !important; }
-div[style*="background: '#dcf4fa'"] { background: #2a2008 !important; }
+/* ── Stage row icon backgrounds in VideoUpload/CameraCard ────────────────── */
+div[style*="background: '#dff5ec'"] { background: #081a0e !important; }
+div[style*="background: '#dcf4fa'"] { background: #261800 !important; }
 div[style*="background: '#f0f4f7'"] { background: #2a2015 !important; }
+div[style*="border: '1px solid #aee8ce'"] { border-color: #143820 !important; }
 
-/* Success banners — warm green */
-div[style*="border: '1px solid #aee8ce'"] { border-color: #2a4828 !important; }

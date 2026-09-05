@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { fetchHealth } from '@/lib/api'
 import { getUser, logout } from '@/src/auth'
 
-const items=[['Overview','/dashboard',Gauge],['Vehicle Search','/dashboard/vehicle-search',FileSearch],['Upload Video','/dashboard/upload-video',Upload],['Camera Network','/dashboard/cameras',Radio],['Traffic Analytics','/dashboard/traffic-analytics',BarChart3],['City Map','/dashboard/city-map',MapPinned],['Trajectory Explorer','/dashboard/trajectory-explorer',Navigation2],['NL Query','/dashboard/nl-query',MessageSquare],['Alerts','/dashboard/alerts',Bell],['Manual Review','/dashboard/manual-review',ShieldAlert],['Blacklist Monitoring','/dashboard/blacklist',ShieldAlert],['System Health','/dashboard/system-health',Activity]] as const
+const items=[['🏙️ Overview','/dashboard',Gauge],['🔍 Vehicle Search','/dashboard/vehicle-search',FileSearch],['🎬 Upload Video','/dashboard/upload-video',Upload],['📹 Camera Network','/dashboard/cameras',Radio],['📊 Traffic Analytics','/dashboard/traffic-analytics',BarChart3],['🗺️ City Map','/dashboard/city-map',MapPinned],['🚗 Trajectory Explorer','/dashboard/trajectory-explorer',Navigation2],['💬 NL Query','/dashboard/nl-query',MessageSquare],['🚨 Alerts','/dashboard/alerts',Bell],['🔎 Manual Review','/dashboard/manual-review',ShieldAlert],['🚫 Blacklist','/dashboard/blacklist',ShieldAlert],['⚙️ System Health','/dashboard/system-health',Activity]] as const
 
 /** Live API connectivity indicator shown in the sidebar bottom */
 function ApiStatus() {
