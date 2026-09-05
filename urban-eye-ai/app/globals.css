@@ -6,22 +6,23 @@
 
 :root {
   color-scheme: dark;
-  --background: #0d1520;
-  --foreground: #d4e4f0;
-  --card: #131f2e;
-  --card-foreground: #d4e4f0;
-  --muted: #1a2840;
-  --muted-foreground: #6b8ba4;
-  --border: #1e3048;
-  --primary: #08a6d1;
-  --primary-foreground: #ffffff;
-  --cyan: #08a6d1;
-  --navy: #080f1a;
-  --navy-muted: #5a7a94;
-  --amber: #f59e0b;
-  --green: #10b981;
-  --red: #ef4444;
-  --purple: #818cf8;
+  /* ── Signal House palette — warm charcoal, cream, amber-gold ── */
+  --background: #1a1208;        /* Signal House dark brown base */
+  --foreground: #e8dfc8;        /* warm cream text */
+  --card: #221a0e;              /* slightly lighter warm card */
+  --card-foreground: #e8dfc8;
+  --muted: #2a2015;             /* muted card / input background */
+  --muted-foreground: #8a7a60;  /* warm muted text */
+  --border: #3a2e1e;            /* warm brown border */
+  --primary: #c9a84c;           /* Signal House amber-gold */
+  --primary-foreground: #1a1208;
+  --cyan: #c9a84c;              /* repurposed as gold throughout */
+  --navy: #120e06;              /* deepest sidebar background */
+  --navy-muted: #6a5a40;
+  --amber: #e8a020;             /* traffic amber — warnings */
+  --green: #4a9e6a;             /* traffic green — go / normal */
+  --red: #c04040;               /* traffic red — stop / critical */
+  --purple: #9a7aaa;
   --radius: 0.65rem;
 }
 
@@ -450,3 +451,243 @@ div[style*="background: '#f6f9fb'"] {
   background: var(--muted) !important;
   color: var(--muted-foreground) !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIGNAL HOUSE THEME — warm charcoal · cream · amber-gold · traffic signals
+   Inspired by: stop (red) · slow (amber) · go (green)
+   All overrides are additive. Zero functionality removed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+body { background: var(--background); color: var(--foreground); }
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+.sidebar { background: #120e06; border-right: 1px solid #2a2010; }
+.brand { border-bottom: 1px solid #2a2010; background: #120e06; }
+.brand-mark { background: linear-gradient(135deg, #7a5a18, #c9a84c); color: #1a1208; box-shadow: 0 0 16px #c9a84c30; }
+.brand strong { color: #e8dfc8; }
+.brand strong span { color: #c9a84c; }
+.brand small { color: #5a4a30; }
+.workspace-select { background: #1e1608; border-color: #3a2e1e; color: #c8b890; }
+.eyebrow { color: #6a5a40; }
+.nav-item { color: #6a5a40; }
+.nav-item:hover { background: #1e1608; color: #c8b890; }
+.nav-item.active { background: #2a1e08; color: #e8dfc8; box-shadow: inset 3px 0 #c9a84c; }
+.nav-item.active svg { color: #c9a84c; }
+.nav-chevron { color: #4a3a24 !important; }
+.nav-item b { background: #3a2808; color: #c9a84c; }
+.api-status { border-color: #2a2010; }
+.api-status strong { color: #c8b890; }
+.api-status small { color: #6a5a40; }
+.user-card { color: #c8b890; }
+.avatar, .topbar-avatar { background: #2a1e08; color: #c9a84c; }
+.sidebar-bottom { border-top: 1px solid #2a2010; }
+.pulse, .status-dot { background: var(--green); box-shadow: 0 0 0 4px #1a2e1a; }
+
+/* ── Topbar ───────────────────────────────────────────────────────────────── */
+.topbar { background: #1a1208; border-bottom: 1px solid #2a2010; }
+.topbar-avatar { background: #2a1e08; color: #c9a84c; }
+.live-indicator { color: #4a9e6a; }
+.live-indicator span { background: #4a9e6a; box-shadow: 0 0 6px #4a9e6a66; }
+.topbar-note { color: #6a5a40; }
+.topbar-separator { background: #2a2010; }
+.notification-button svg, .help-button svg { color: #6a5a40; }
+.notification-button span { background: var(--red); }
+
+/* ── Page heading ─────────────────────────────────────────────────────────── */
+.page-heading h1 { color: #e8dfc8; letter-spacing: -.8px; }
+.breadcrumbs { color: #4a3a24; }
+.breadcrumbs strong { color: #6a5a40; }
+.date-button { background: #1e1608; border-color: #3a2e1e; color: #8a7a60; }
+.date-button:hover { border-color: #c9a84c; color: #c9a84c; }
+.primary-button { background: #c9a84c; border-color: #c9a84c; color: #1a1208; box-shadow: 0 0 16px #c9a84c25; font-weight: 800; }
+.primary-button:hover { background: #dab85c; box-shadow: 0 0 24px #c9a84c45; }
+.icon-button { background: #1e1608; border-color: #3a2e1e; color: #8a7a60; }
+.icon-button:hover { border-color: #c9a84c; color: #c9a84c; }
+.text-button { color: #c9a84c; background: transparent; }
+
+/* ── KPI cards ────────────────────────────────────────────────────────────── */
+.kpi-card {
+  background: linear-gradient(145deg, #221a0e, #1c1408);
+  border: 1px solid #3a2e1e;
+  box-shadow: 0 2px 16px #00000060;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #c9a84c50, transparent);
+}
+.kpi-value { color: #e8dfc8; }
+.kpi-label { color: #6a5a40; }
+.kpi-trend { color: var(--green); }
+.kpi-trend span { color: #5a4a30; }
+.kpi-trend.down { color: var(--amber); }
+.kpi-progress { background: #2a2015; }
+.kpi-subtext { color: #5a4a30; }
+
+/* KPI icon backgrounds — traffic-light themed */
+.cyan-bg   { color: #c9a84c; background: #2a2008; border: 1px solid #3a2e18; }
+.amber-bg  { color: #e8a020; background: #261808; border: 1px solid #3a2808; }
+.green-bg  { color: #4a9e6a; background: #0e2018; border: 1px solid #1a3820; }
+.purple-bg { color: #9a7aaa; background: #1a1222; border: 1px solid #2a1e38; }
+.red-bg    { color: #c04040; background: #220808; border: 1px solid #381010; }
+
+/* ── Panels ───────────────────────────────────────────────────────────────── */
+.panel {
+  background: #221a0e;
+  border: 1px solid #3a2e1e;
+  box-shadow: 0 2px 20px #00000055;
+}
+.panel-header h2 { color: #d8c8a0; font-weight: 700; letter-spacing: -.2px; }
+.panel-header p { color: #6a5a40; font-size: 10px; }
+.segmented { border-color: #3a2e1e; }
+.segmented button { background: #1e1608; color: #5a4a30; }
+.segmented button + button { border-left-color: #3a2e1e; }
+.segmented button.selected { background: #2a1e08; color: #c9a84c; }
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+th { color: #5a4a30; border-bottom-color: #3a2e1e; font-size: 9px; letter-spacing: 1px; }
+td { color: #8a7a60; border-bottom-color: #221a0e; }
+tr:hover td { background: #1e1608; }
+tr:last-child td { border-bottom: 0; }
+.table-search { background: #1e1608; border-color: #3a2e1e; color: #5a4a30; }
+.table-search input { color: #8a7a60; background: transparent; }
+.table-search input::placeholder { color: #3a2e1e; }
+
+/* Plate display — like a real number plate on asphalt */
+.plate { color: #e8dfc8; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: .5px; }
+.plate-mark { background: #c9a84c; }
+.plate-mark.amber { background: var(--amber); }
+.plate-mark.green { background: var(--green); }
+.confidence { color: #4a9e6a; font-weight: 700; }
+.location svg { color: #5a4a30; }
+
+/* ── Status pills — traffic signal colours ───────────────────────────────── */
+.status-pill { background: #0e2018; color: #4a9e6a; border: 1px solid #1a3820; }
+.status-pill.amber { background: #261808; color: #e8a020; border: 1px solid #3a2808; }
+.status-pill.red   { background: #220808; color: #c04040; border: 1px solid #381010; }
+.status-pill.cyan  { background: #2a2008; color: #c9a84c; border: 1px solid #3a2e18; }
+
+/* ── Alert rows ───────────────────────────────────────────────────────────── */
+.alert-row { border-bottom-color: #2a2010; }
+.alert-row:hover { background: #1e1608; }
+.alert-icon.critical { color: #c04040; background: #220808; border: 1px solid #381010; }
+.alert-icon.warning  { color: #e8a020; background: #261808; border: 1px solid #3a2808; }
+.alert-icon.info     { color: #c9a84c; background: #2a2008; border: 1px solid #3a2e18; }
+.alert-copy strong { color: #c8b890; }
+.alert-copy small { color: #5a4a30; }
+.alert-copy em { color: #3a2e20; }
+.alert-footer { background: #1e1608; border-color: #3a2e1e; color: #c9a84c; }
+.alert-row > svg { color: #3a2e20; }
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+.footer { color: #3a2e20; }
+.footer strong { color: #5a4a30; }
+
+/* ── Inputs & selects ─────────────────────────────────────────────────────── */
+input[type="text"], input[type="email"], input[type="password"], input[type="search"],
+select, textarea {
+  background: #1e1608;
+  border-color: #3a2e1e;
+  color: #c8b890;
+}
+input::placeholder, textarea::placeholder { color: #3a2e1e; }
+input:focus, select:focus, textarea:focus {
+  border-color: #c9a84c;
+  box-shadow: 0 0 0 3px #c9a84c18;
+  outline: none;
+}
+select option { background: #1e1608; color: #c8b890; }
+
+/* ── Map panel (decorative dashboard map) ────────────────────────────────── */
+.map-panel { background: #120e06; }
+.map-art {
+  background-image:
+    linear-gradient(25deg, transparent 47%, #2a2010 48%, #2a2010 49%, transparent 50%),
+    linear-gradient(122deg, transparent 49%, #261e0c 50%, transparent 51%),
+    linear-gradient(12deg, transparent 65%, #221808 66%, transparent 67%);
+}
+.road { background: #3a2e14; }
+.map-search { background: #1e1608; color: #5a4a30; box-shadow: 0 2px 8px #00000050; }
+.map-search input { color: #8a7a60; }
+.map-legend { background: #1e1608ee; color: #5a4a30; }
+.map-label { color: #3a2e18; }
+.legend-dot { background: var(--green); }
+.legend-dot.alert { background: var(--amber); }
+
+/* ── City Map (Leaflet) ──────────────────────────────────────────────────── */
+.city-map-panel { background: #221a0e; border-color: #3a2e1e; }
+.city-map-toolbar { border-bottom-color: #3a2e1e; }
+.city-map-toolbar button { background: #1e1608; border-color: #3a2e1e; color: #8a7a60; }
+.city-map-toolbar button:hover { border-color: #c9a84c; color: #c9a84c; }
+.city-map-toolbar button.active { border-color: #c9a84c; background: #2a2008; color: #c9a84c; }
+.city-map-status { color: #3a2e1e; border-top-color: #3a2e1e; }
+.city-map-container .leaflet-container { background: #120e06; }
+/* Warm sepia tone for map tiles — like golden hour */
+.city-map-container .leaflet-tile-pane { filter: brightness(0.5) saturate(0.3) sepia(0.4) hue-rotate(10deg); }
+
+/* Camera marker dots — traffic-light colours with warm glow */
+.cam-dot.low    { background: #4a9e6a; box-shadow: 0 0 7px #4a9e6a70; border-color: #2a3a28; }
+.cam-dot.medium { background: #c9a84c; box-shadow: 0 0 7px #c9a84c70; border-color: #3a3018; }
+.cam-dot.high   { background: #e8a020; box-shadow: 0 0 7px #e8a02070; border-color: #3a2808; }
+.cam-dot.severe { background: #c04040; box-shadow: 0 0 7px #c0404070; border-color: #381010; }
+.cam-dot.default{ background: #c9a84c; box-shadow: 0 0 7px #c9a84c70; border-color: #3a3018; }
+.cam-dot.inactive{ background: #4a3a24; }
+
+/* ── Upload zone drag-over ────────────────────────────────────────────────── */
+.upload-zone-active { border-color: #c9a84c !important; background: #1e1608 !important; }
+
+/* ── Chart grid lines ─────────────────────────────────────────────────────── */
+.gridlines i { border-top-color: #3a2e1e; }
+
+/* Bar chart gradient — amber-gold for traffic data */
+/* (applied via inline style in Pages.tsx — these override the hardcoded colors) */
+
+/* ── NL Query chips ───────────────────────────────────────────────────────── */
+.nl-chip { background: #1e1608 !important; border-color: #3a2e1e !important; color: #6a5a40 !important; }
+.nl-chip:hover { background: #c9a84c !important; color: #1a1208 !important; border-color: #c9a84c !important; }
+.nl-table td { border-bottom-color: #2a2010; }
+.nl-table tr:hover td { background: #1e1608; }
+
+/* ── Scrollbars ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #1a1208; }
+::-webkit-scrollbar-thumb { background: #3a2e1e; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #c9a84c55; }
+
+/* ── Map nodes (overview decorative map) ──────────────────────────────────── */
+.map-node { background: #c9a84c18; }
+.map-node span { background: var(--green); border-color: #3a2e1e; }
+.node-4 span { background: var(--amber); }
+
+/* ── Grid lines & chart text ──────────────────────────────────────────────── */
+.chart-y, .chart-x { color: #5a4a30; }
+
+/* ── Inline component color overrides ────────────────────────────────────── */
+/* These target the remaining components that use inline style strings */
+/* Select/input inside panels */
+.panel select, .panel input[type="text"], .panel input[type="search"],
+.panel input[type="file"] {
+  background: #1e1608 !important;
+  color: #c8b890 !important;
+  border-color: #3a2e1e !important;
+}
+
+/* Progress bar tracks */
+div[style*="background: #1a2f44"],
+div[style*="background:#1a2f44"] {
+  background: #2a2015 !important;
+}
+
+/* Stage row backgrounds in VideoUpload */
+div[style*="background: '#dff5ec'"] { background: #0e2018 !important; }
+div[style*="background: '#dcf4fa'"] { background: #2a2008 !important; }
+div[style*="background: '#f0f4f7'"] { background: #2a2015 !important; }
+
+/* Success banners — warm green */
+div[style*="border: '1px solid #aee8ce'"] { border-color: #2a4828 !important; }
