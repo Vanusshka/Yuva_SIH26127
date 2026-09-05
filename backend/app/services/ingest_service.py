@@ -79,7 +79,7 @@ _ocr_engine       = OCREngine()
 # ── Internal thresholds ───────────────────────────────────────────────────────
 _LOW_CONF_THRESHOLD = 0.50
 _DEBUG_PLATE_IMAGES = False
-_YOLO_VEHICLE_CONF  = 0.40
+_YOLO_VEHICLE_CONF  = 0.30   # matches VEHICLE_CONF_THRESH in config
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

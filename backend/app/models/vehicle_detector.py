@@ -22,7 +22,7 @@ except ImportError:
     YOLO = None  # type: ignore
     _ULTRALYTICS_AVAILABLE = False
 
-from app.config import VEHICLE_MODEL_NAME, VEHICLE_CONF_THRESH, VEHICLE_CLASS_IDS
+from app.config import VEHICLE_MODEL_NAME, VEHICLE_CONF_THRESH, VEHICLE_CLASS_IDS, MODELS_DIR
 
 
 @dataclass
@@ -47,8 +47,16 @@ class VehicleDetector:
         if not _ULTRALYTICS_AVAILABLE:
             return  # stub mode — detect() will return []
         if self._model is None:
-            print(f"[VehicleDetector] Loading {VEHICLE_MODEL_NAME} ...")
-            self._model = YOLO(VEHICLE_MODEL_NAME)
+            # Always resolve against MODELS_DIR so it works regardless of CWD
+            model_path = MODELS_DIR / VEHICLE_MODEL_NAME
+            if not model_path.exists():
+                # Fallback: try ultralytics auto-download (yolov8n.pt etc.)
+                model_path_str = VEHICLE_MODEL_NAME
+                print(f"[VehicleDetector] WARNING: {model_path} not found — trying '{VEHICLE_MODEL_NAME}' as built-in name")
+            else:
+                model_path_str = str(model_path)
+            print(f"[VehicleDetector] Loading {model_path_str} ...")
+            self._model = YOLO(model_path_str)
             print("[VehicleDetector] Model ready.")
 
     def detect(

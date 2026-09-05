@@ -21,7 +21,7 @@ DATABASE_URL = f"sqlite:///{DATA_DIR / 'traffic.db'}"
 
 # ── Vehicle Detection (YOLOv8) ────────────────────────────────────────────────
 VEHICLE_MODEL_NAME   = "best.pt"
-VEHICLE_CONF_THRESH  = 0.40
+VEHICLE_CONF_THRESH  = 0.30   # lowered from 0.40 — more recall on traffic video
 
 # Class indices for the trained 6-class vehicle detector (best.pt).
 # These are NOT COCO indices — they are the model's own 0-based indices
@@ -70,7 +70,7 @@ def get_vehicle_category(vehicle_class: str) -> str:
 
 # ── Plate Detection ───────────────────────────────────────────────────────────
 PLATE_MODEL_NAME  = "plate_detector_best_fast.pt"   # trained model, mAP50 0.984
-PLATE_CONF_THRESH = 0.30
+PLATE_CONF_THRESH = 0.20   # lowered from 0.30 — catches more plate candidates for OCR
 
 # ── OCR ───────────────────────────────────────────────────────────────────────
 # Switch to "paddleocr" to use the fine-tuned SVTR_LCNet recognizer.
@@ -96,7 +96,7 @@ API_VERSION = "0.5.0"
 MAX_UPLOAD_MB = 20
 
 # ── Video ingestion ───────────────────────────────────────────────────────────
-DEFAULT_FRAME_SKIP = 5
+DEFAULT_FRAME_SKIP = 3   # was 5 — lower = more detections, better coverage on short videos
 
 # ── Trajectory thresholds ─────────────────────────────────────────────────────
 SPEED_FAST_KMPH         = 80.0
@@ -158,7 +158,7 @@ COMPLIANCE_ANOMALY_MIN_FRAMES_WITHOUT_PLATE = 3
 #   Set False in development to skip the blur step and save processing time.
 #   Set True for any public demo or real deployment.
 #
-PRIVACY_MODE = True
+PRIVACY_MODE = False   # Disabled — face blur was running before YOLO and blocking all vehicle detections
 
 # Minimum face detection confidence for the Haar cascade (scaleFactor).
 # 1.05 = very sensitive (more detections, more false positives)
