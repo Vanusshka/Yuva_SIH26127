@@ -132,7 +132,7 @@ function StageRow({
       )}
       {state === 'active' && (
         <span style={{ fontSize: 9, color: 'var(--cyan)', fontWeight: 700, letterSpacing: '.5px' }}>
-          RUNNING
+          {stage.id === 'analytics' ? 'PROCESSING' : 'RUNNING'}
         </span>
       )}
     </div>
@@ -334,27 +334,48 @@ export default function VideoUpload() {
     setStartTime(Date.now())
     setElapsedSec(0)
 
-    // Simple stage cycling — purely visual, does NOT block result display
-    const stageOrder: StageId[] = ['uploading', 'vehicles', 'tracking', 'plates', 'ocr', 'analytics']
-    let stageIdx = 0
-    const stageTimer = setInterval(() => {
-      stageIdx = Math.min(stageIdx + 1, stageOrder.length - 1)
-      setActiveStage(stageOrder[stageIdx])
-    }, 4000) // advance one stage every 4s cosmetically
+    // Cancellable stage animation — steps through stages based on frame count
+    // estimate. When the XHR returns first, cancel() stops the animation and
+    // the result is shown immediately. The last stage ('analytics') stays active
+    // until the backend actually responds — it never locks permanently.
+    let cancelled = false
+    const cancel = () => { cancelled = true }
+
+    const animateStages = async () => {
+      // Estimate frames from file size (~25fps, average 100KB/frame for compressed video)
+      const estimatedFrames = Math.round(file.size / (100 * 1024) * 25)
+      const estimate = Math.max(estimatedFrames, 100) / Math.max(frameSkip, 1)
+      // Each of the 4 pre-analytics stages gets equal share, min 1.5s max 8s
+      const stageMs = Math.min(Math.max((estimate / 4) * 1000, 1500), 8_000)
+
+      const midStages: StageId[] = ['vehicles', 'tracking', 'plates', 'ocr']
+      for (const stage of midStages) {
+        if (cancelled) return
+        setActiveStage(stage)
+        await new Promise<void>(r => setTimeout(r, stageMs))
+        if (cancelled) return
+        setDoneStages(prev => new Set([...prev, stage]))
+      }
+      // Analytics: stay active until backend responds (cancelled by XHR return)
+      if (!cancelled) setActiveStage('analytics')
+    }
+
+    animateStages()   // run concurrently — does NOT block the XHR
 
     try {
       const apiResult = await processVideo(file, cameraId, frameSkip, (pct) => {
         setUploadPct(pct)
+        if (pct === 100) setActiveStage('analytics') // jump to analytics once upload done
       })
 
-      // API returned — stop animation, show results immediately
-      clearInterval(stageTimer)
+      // Backend responded — cancel animation, mark all done, show results
+      cancel()
       setDoneStages(new Set(STAGES.map(s => s.id)))
       setActiveStage(null)
       setResult(apiResult)
       setUploadState('done')
     } catch (err) {
-      clearInterval(stageTimer)
+      cancel()
       const msg = err instanceof ApiError
         ? err.detail
         : `Unexpected error: ${(err as Error).message}`
@@ -603,7 +624,9 @@ export default function VideoUpload() {
                   <h2>Pipeline Stages</h2>
                   <p>
                     {uploadState === 'processing'
-                      ? `Running… ${formatDuration(elapsedSec)}`
+                      ? activeStage === 'analytics'
+                        ? `Waiting for server… ${formatDuration(elapsedSec)}`
+                        : `Running… ${formatDuration(elapsedSec)}`
                       : 'Ready to process'}
                   </p>
                 </div>
