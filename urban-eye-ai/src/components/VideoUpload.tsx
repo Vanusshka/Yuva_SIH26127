@@ -166,7 +166,7 @@ export default function VideoUpload() {
 
   // Config
   const [cameraId,     setCameraId]     = useState('CAM_001')
-  const [frameSkip,    setFrameSkip]    = useState(8)
+  const [frameSkip,    setFrameSkip]    = useState(15)
 
   // Processing state
   const [uploadState,  setUploadState]  = useState<UploadState>('idle')
