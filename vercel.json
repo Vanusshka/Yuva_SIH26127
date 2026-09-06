@@ -1,4 +1,9 @@
 {
+  "framework": "nextjs",
+  "rootDir": "frontend",
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install",
+  "outputDirectory": "frontend/.next",
   "rewrites": [
     {
       "source": "/((?!api|_next|static|favicon|public).*)",
