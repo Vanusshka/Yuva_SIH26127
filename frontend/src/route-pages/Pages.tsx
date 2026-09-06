@@ -440,6 +440,18 @@ export function VehicleSearch() {
   const [traj,     setTraj]     = useState<TrajectoryResponse | null>(null)
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState<string | null>(null)
+  const [knownPlates, setKnownPlates] = useState<string[]>([])
+
+  // Load real plates from the database on mount
+  useEffect(() => {
+    fetchVehicles(50).then(res => {
+      const plates = res.vehicles
+        .map(v => v.plate_number)
+        .filter(Boolean)
+        .slice(0, 12)
+      setKnownPlates(plates)
+    }).catch(() => {/* backend offline — show nothing */})
+  }, [])
 
   const track = useCallback(async (searchPlate: string) => {
     const p = searchPlate.trim().toUpperCase()
@@ -507,24 +519,25 @@ export function VehicleSearch() {
         <p style={{ fontSize: 10, color: 'var(--muted-foreground)', marginTop: 8 }}>
           Search any verified plate number from processed videos.
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-          <span style={{ fontSize: 9, color: 'var(--muted-foreground)', alignSelf: 'center' }}>
-            Synthetic dataset plates:
-          </span>
-          {['TS09AB1234','TS08CD5678','AP09EF2468','TS10GH1357','KA05JK7890',
-            'TS11LM4821','TS12NP6314','AP10QR9753','TS13ST2046','TS14UV8162'].map(p => (
-            <button
-              key={p}
-              onClick={() => track(p)}
-              style={{
-                fontSize: 9, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
-                background: 'var(--muted)', border: '1px solid var(--border)',
-                color: 'var(--primary)', fontFamily: 'Courier New, monospace',
-                fontWeight: 700, letterSpacing: '.3px',
-              }}
-            >{p}</button>
-          ))}
-        </div>
+        {knownPlates.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+            <span style={{ fontSize: 9, color: 'var(--muted-foreground)', alignSelf: 'center' }}>
+              Detected plates:
+            </span>
+            {knownPlates.map(p => (
+              <button
+                key={p}
+                onClick={() => track(p)}
+                style={{
+                  fontSize: 9, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
+                  background: 'var(--muted)', border: '1px solid var(--border)',
+                  color: 'var(--primary)', fontFamily: 'Courier New, monospace',
+                  fontWeight: 700, letterSpacing: '.3px',
+                }}
+              >{p}</button>
+            ))}
+          </div>
+        )}
       </Panel>
 
       {loading && <Loading label={`Searching for ${plate}â€¦`} />}
