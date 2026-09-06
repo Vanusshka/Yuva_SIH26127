@@ -1,16 +1,39 @@
 # UrbanEye AI — Render.com deployment requirements
-# Render uses Python 3.11 by default.
-# PaddleOCR is NOT included here — too large for Render free tier (500MB disk limit).
-# Set OCR_ENGINE=easyocr and MODEL_PROVIDER=huggingface on Render.
+# Python 3.11 on Render.
+#
+# NOTE: torch is installed first via render_build.sh (CPU-only wheel).
+# This file is installed AFTER torch is already present.
+#
+# OCR strategy on Render:
+#   - If PaddleOCR model files are present (downloaded via MODEL_PADDLE_URL):
+#       OCR_ENGINE=paddleocr  (your fine-tuned model)
+#   - Otherwise:
+#       OCR_ENGINE=easyocr    (generic fallback, lower accuracy on Indian plates)
 
+# ── Core API ──────────────────────────────────────────────────────────────────
 fastapi==0.111.1
 uvicorn[standard]==0.30.3
 python-multipart==0.0.9
 pydantic==2.7.4
+
+# ── Database ──────────────────────────────────────────────────────────────────
 sqlalchemy==2.0.31
 psycopg2-binary==2.9.9
+
+# ── Computer Vision ───────────────────────────────────────────────────────────
 numpy==1.26.4
 opencv-python-headless==4.10.0.84
-easyocr==1.7.1
+
+# ── Object Detection (requires torch — install torch CPU wheel first) ─────────
 ultralytics==8.2.87
+
+# ── OCR — EasyOCR as baseline (always installed) ────────────────────────────
+easyocr==1.7.1
+
+# ── OCR — PaddleOCR fine-tuned (only useful if paddle model files are present)
+# Uncomment these lines if you have enough disk/RAM on Render (paid tier):
+# paddlepaddle==2.6.1
+# paddleocr==2.7.3
+
+# ── HTTP client (for future HF integration) ───────────────────────────────────
 httpx==0.27.0
