@@ -51,14 +51,18 @@ class Base(DeclarativeBase):
     pass
 
 
-# ── SQLite column migration helper ────────────────────────────────────────────
+# ── Column migration helper (DB-agnostic) ─────────────────────────────────────
 def _add_column_if_missing(conn, table: str, column: str, col_def: str) -> None:
     """
-    Add a column to a SQLite table if it does not already exist.
-    Uses PRAGMA table_info which is available in all SQLite versions.
+    Add a column to a table if it does not already exist.
+
+    Uses SQLAlchemy's Inspector — works with SQLite, PostgreSQL, and any other
+    SQLAlchemy-supported dialect.  Replaces the previous PRAGMA table_info()
+    approach which was SQLite-only and raised ProgrammingError on PostgreSQL.
     """
-    result = conn.execute(text(f"PRAGMA table_info({table})"))
-    existing = {row[1] for row in result}
+    from sqlalchemy import inspect as sa_inspect
+    inspector = sa_inspect(conn)
+    existing = {c["name"] for c in inspector.get_columns(table)}
     if column not in existing:
         conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}"))
         logger.info("[DB Migration] Added column %s.%s", table, column)
@@ -68,9 +72,10 @@ def _migrate_v2(conn) -> None:
     """
     Change 4 — Add OCR evidence and category fields to vehicle_events.
     Safe to run on every startup: skips columns that already exist.
+    Works with both SQLite (local dev) and PostgreSQL (Render).
     """
     migrations = [
-        # (column_name, SQLite type definition)
+        # (column_name, SQL type — both SQLite and PostgreSQL accept these)
         ("confidence_tier",     "TEXT"),
         ("valid_ocr_reads",     "INTEGER"),
         ("matching_ocr_reads",  "INTEGER"),

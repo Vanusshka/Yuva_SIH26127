@@ -174,10 +174,45 @@ class _PaddleOCREngine:
                 PADDLE_CHAR_DICT_PATH,
             )
 
-            sys.path.insert(0, str(PADDLEOCR_REPO_DIR))
+            # ── sys.path setup ────────────────────────────────────────────────
+            # paddleocr_infer/tools/ and paddleocr_infer/tools/infer/ have no
+            # __init__.py, so `from tools.infer.predict_rec import ...` fails
+            # with "No module named 'tools'".
+            #
+            # The fix matches how predict_rec.py itself sets up its imports:
+            #   sys.path.append(__dir__)                    # tools/infer/
+            #   sys.path.insert(0, os.path.join(__dir__, "../.."))  # repo root
+            #
+            # We add both:
+            #   1. PADDLEOCR_REPO_DIR (models/paddleocr_infer/) — for `ppocr.*`
+            #   2. tools/infer/ directory — so predict_rec and utility are
+            #      importable as top-level modules (not via package notation)
+            tools_infer_dir = str(PADDLEOCR_REPO_DIR / "tools" / "infer")
+            repo_dir        = str(PADDLEOCR_REPO_DIR)
 
-            from tools.infer.predict_rec import TextRecognizer
-            from tools.infer.utility import init_args
+            if repo_dir not in sys.path:
+                sys.path.insert(0, repo_dir)
+            if tools_infer_dir not in sys.path:
+                sys.path.insert(0, tools_infer_dir)
+
+            # Now import directly — predict_rec.py is a top-level file in
+            # tools/infer/, not a submodule of a package.
+            import importlib.util, os
+
+            def _load_module(name: str, filepath: str):
+                """Load a .py file as a module by absolute path."""
+                spec   = importlib.util.spec_from_file_location(name, filepath)
+                mod    = importlib.util.module_from_spec(spec)
+                sys.modules[name] = mod
+                spec.loader.exec_module(mod)
+                return mod
+
+            infer_dir = PADDLEOCR_REPO_DIR / "tools" / "infer"
+            utility   = _load_module("utility",     str(infer_dir / "utility.py"))
+            pred_rec  = _load_module("predict_rec", str(infer_dir / "predict_rec.py"))
+
+            TextRecognizer = pred_rec.TextRecognizer
+            init_args      = utility.init_args
 
             logger.info("[OCR] Initialising PaddleOCR (fine-tuned) recognizer...")
 
@@ -191,7 +226,7 @@ class _PaddleOCREngine:
             rec_args.max_text_length    = 15
             rec_args.use_space_char     = False
             rec_args.rec_char_dict_path = str(PADDLE_CHAR_DICT_PATH)
-            rec_args.use_gpu            = False   # CPU-only, matching existing setup
+            rec_args.use_gpu            = False   # CPU-only
 
             cls._recognizer = TextRecognizer(rec_args)
             logger.info("[OCR] PaddleOCR (fine-tuned) ready.")
