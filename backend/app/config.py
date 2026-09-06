@@ -96,7 +96,7 @@ API_VERSION = "0.5.0"
 MAX_UPLOAD_MB = 20
 
 # ── Video ingestion ───────────────────────────────────────────────────────────
-DEFAULT_FRAME_SKIP = 15   # fast: short demo videos get processed in ~20s
+DEFAULT_FRAME_SKIP = 20   # process every 20th frame — fast, ~10-15s for a 15s demo video
 
 # ── Trajectory thresholds ─────────────────────────────────────────────────────
 SPEED_FAST_KMPH         = 80.0

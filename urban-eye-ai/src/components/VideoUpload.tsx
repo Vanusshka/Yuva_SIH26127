@@ -52,10 +52,10 @@ const CAMERAS = [
 ]
 
 const FRAME_SKIP_OPTIONS = [
-  { value: 3,  label: 'High quality  (every 3rd frame — slowest)' },
-  { value: 5,  label: 'Balanced      (every 5th frame)' },
-  { value: 8,  label: 'Fast          (every 8th frame — recommended)' },
-  { value: 15, label: 'Quick scan    (every 15th frame — fastest)' },
+  { value: 5,  label: 'High quality  (every 5th frame — slowest)' },
+  { value: 10, label: 'Balanced      (every 10th frame)' },
+  { value: 20, label: 'Fast          (every 20th frame — recommended)' },
+  { value: 30, label: 'Quick scan    (every 30th frame — fastest)' },
 ]
 
 /** Processing pipeline stages */
@@ -166,7 +166,9 @@ export default function VideoUpload() {
 
   // Config
   const [cameraId,     setCameraId]     = useState('CAM_001')
-  const [frameSkip,    setFrameSkip]    = useState(15)
+  const [frameSkip,    setFrameSkip]    = useState(20)
+
+
 
   // Processing state
   const [uploadState,  setUploadState]  = useState<UploadState>('idle')

@@ -234,10 +234,9 @@ def _run_ocr(image: np.ndarray, variant_name: str = "unknown") -> OCRResult:
 
     if OCR_ENGINE == "paddleocr":
         raw_text, conf = _PaddleOCREngine.read_image(image)
-        # Hard fallback: if PaddleOCR returned nothing (model not loaded yet /
-        # inference error), drop through to EasyOCR so the pipeline keeps working.
-        if not raw_text:
-            raw_text, conf = _EasyOCREngine.read_image(image)
+        # Do NOT fall back to EasyOCR — it loads a 200MB model cold on first call
+        # which adds 40s to the first video. If PaddleOCR returns empty it means
+        # the crop is genuinely unreadable; treat it as noise (empty result).
     elif OCR_ENGINE == "easyocr":
         raw_text, conf = _EasyOCREngine.read_image(image)
     else:
