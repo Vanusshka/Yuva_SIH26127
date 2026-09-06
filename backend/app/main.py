@@ -211,19 +211,25 @@ app = FastAPI(
     redoc_url   = "/redoc",
 )
 
-# ── CORS (Phase 8 – explicit origins for UrbanEye AI Emergent frontend) ───────
+# ── CORS — reads FRONTEND_URL env var for production deployment ───────────────
+from app.config import FRONTEND_URL as _FRONTEND_URL
+
 _ALLOWED_ORIGINS = [
-    "http://localhost:3000",        # React dev server (CRA / Vite default)
-    "http://localhost:5173",        # Vite alternative port
-    "http://localhost:5174",        # Vite alternative port
-    "http://localhost:8080",        # Vue / webpack-dev-server
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:8080",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
-    "https://urbaneye-ai.vercel.app",        # Emergent Vercel deployment (update as needed)
-    "https://urbaneye-ai.netlify.app",       # Emergent Netlify deployment (update as needed)
-    # Add the actual Emergent URL here once known
 ]
+
+# Append any production frontend URLs from the environment
+if _FRONTEND_URL:
+    for _origin in _FRONTEND_URL.split(","):
+        _origin = _origin.strip()
+        if _origin and _origin not in _ALLOWED_ORIGINS:
+            _ALLOWED_ORIGINS.append(_origin)
 
 app.add_middleware(
     CORSMiddleware,

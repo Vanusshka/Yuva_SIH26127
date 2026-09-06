@@ -1,8 +1,10 @@
 """
 Central configuration for the SIH26127 ANPR backend.
 All paths and tuneable constants live here.
+Environment variables override defaults for deployment.
 """
 
+import os
 from pathlib import Path
 
 # ── Base Paths ────────────────────────────────────────────────────────────────
@@ -17,7 +19,15 @@ for _d in (INPUT_DIR, OUTPUT_DIR, MODELS_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
 # ── Database ──────────────────────────────────────────────────────────────────
-DATABASE_URL = f"sqlite:///{DATA_DIR / 'traffic.db'}"
+# Override DATABASE_URL on Render/Railway with a real Postgres URL.
+# SQLite is used for local development only.
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    f"sqlite:///{DATA_DIR / 'traffic.db'}",
+)
+# Render Postgres URLs start with postgres:// — SQLAlchemy needs postgresql://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # ── Vehicle Detection (YOLOv8) ────────────────────────────────────────────────
 VEHICLE_MODEL_NAME   = "best.pt"
@@ -94,6 +104,21 @@ PADDLE_CHAR_DICT_PATH = PADDLEOCR_REPO_DIR / "ppocr" / "utils" / "en_dict.txt"
 API_TITLE   = "SIH26127 ANPR API"
 API_VERSION = "0.5.0"
 MAX_UPLOAD_MB = 20
+
+# ── Deployment ────────────────────────────────────────────────────────────────
+# MODEL_PROVIDER = "local"         → use .pt files from backend/models/ (default)
+# MODEL_PROVIDER = "huggingface"   → call HF Inference API for vehicle detection
+#                                    and plate detection (OCR always local)
+MODEL_PROVIDER = os.environ.get("MODEL_PROVIDER", "local")
+
+# Hugging Face Inference API (only used when MODEL_PROVIDER=huggingface)
+HF_VEHICLE_MODEL_URL = os.environ.get("HF_VEHICLE_MODEL_URL", "")
+HF_PLATE_MODEL_URL   = os.environ.get("HF_PLATE_MODEL_URL",   "")
+HF_TOKEN             = os.environ.get("HF_TOKEN", "")
+
+# CORS — set FRONTEND_URL to your Vercel/Netlify deployment URL
+# Multiple origins can be comma-separated: "https://a.vercel.app,https://b.vercel.app"
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
 
 # ── Video ingestion ───────────────────────────────────────────────────────────
 DEFAULT_FRAME_SKIP = 20   # process every 20th frame — fast, ~10-15s for a 15s demo video
