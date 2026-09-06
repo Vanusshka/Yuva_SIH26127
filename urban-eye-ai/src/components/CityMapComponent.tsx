@@ -502,28 +502,30 @@ export default function CityMapComponent() {
       </div>
 
       {/* ── Status bar ───────────────────────────────────────────────────────── */}
-      <div className="city-map-status">
+      <div className="city-map-status" style={{ color: '#d0c090', fontSize: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span
             style={{
               display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
-              background: error ? '#db5b5d' : '#24ae76',
+              background: error ? '#ef4444' : '#22c55e',
+              boxShadow: error ? '0 0 5px #ef4444' : '0 0 5px #22c55e',
             }}
           />
-          {error
-            ? 'Backend unavailable'
-            : `${cameras.length} cameras loaded · Hyderabad, India · OpenStreetMap`}
+          <span style={{ color: '#d0c090' }}>
+            {error
+              ? 'Backend unavailable'
+              : `${cameras.length} cameras loaded · Hyderabad, India · OpenStreetMap`}
+          </span>
         </div>
-        <div style={{ display: 'flex', align: 'center', gap: 14, flexWrap: 'wrap' }}>
-          {/* Legend */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           {['LOW', 'MEDIUM', 'HIGH', 'SEVERE'].map(lvl => (
-            <span key={lvl} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <span key={lvl} style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#d0c090' }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: DENSITY_COLOURS[lvl], display: 'inline-block' }} />
               {lvl.charAt(0) + lvl.slice(1).toLowerCase()}
             </span>
           ))}
           {lastUpdate && (
-            <span style={{ color: '#a0b0c0' }}>Updated {lastUpdate}</span>
+            <span style={{ color: '#f59e0b', fontWeight: 600 }}>Updated {lastUpdate}</span>
           )}
         </div>
       </div>

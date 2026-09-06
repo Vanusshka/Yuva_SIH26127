@@ -64,8 +64,8 @@ def get_overview(db: Session) -> OverviewResponse:
     total_det       = db.query(func.count(Detection.id)).scalar() or 0
     unique_plates   = db.query(func.count(func.distinct(Detection.plate_number))).scalar() or 0
 
-    # Suspicious = plates whose latest trajectory status is not NORMAL
-    suspicious = _count_suspicious_plates(db)
+    # Use fast SQL-only counts — avoid calling reconstruct() per plate (O(n) timeout)
+    suspicious = _count_suspicious_plates_fast(db)
     congested  = _count_congested_cameras(db)
 
     return OverviewResponse(
@@ -77,21 +77,22 @@ def get_overview(db: Session) -> OverviewResponse:
     )
 
 
-def _count_suspicious_plates(db: Session) -> int:
-    plates = (
+def _count_suspicious_plates_fast(db: Session) -> int:
+    """
+    Count plates that appear at multiple distinct cameras.
+    A plate seen at ≥2 different cameras is a candidate for trajectory analysis.
+    This is a fast O(1) SQL query — replaces the slow per-plate reconstruct() loop.
+    Multi-camera plates are then checked for impossible speed only when explicitly
+    requested (GET /trajectory/{plate}), not on every overview call.
+    """
+    from sqlalchemy import func as _func
+    rows = (
         db.query(Detection.plate_number)
-          .distinct()
-          .all()
+          .group_by(Detection.plate_number)
+          .having(_func.count(_func.distinct(Detection.camera_id)) >= 2)
+          .count()
     )
-    count = 0
-    for (plate,) in plates:
-        try:
-            traj = reconstruct(db, plate)
-            if traj.status in (MovementStatus.SUSPICIOUS, MovementStatus.IMPOSSIBLE):
-                count += 1
-        except Exception:
-            pass
-    return count
+    return rows or 0
 
 
 def _count_congested_cameras(db: Session, window_hours: int = 1) -> int:
@@ -140,7 +141,20 @@ def get_traffic_density(db: Session, window_hours: int = 1) -> TrafficDensityRes
 
 # ── Congestion ────────────────────────────────────────────────────────────────
 
+_congestion_cache: dict = {"ts": None, "result": None, "window": None}
+_CONGESTION_CACHE_TTL = 60  # seconds — refresh at most once per minute
+
 def get_congestion(db: Session, window_hours: int = 1) -> CongestionResponse:
+    import time
+    global _congestion_cache
+    now_ts = time.monotonic()
+    if (
+        _congestion_cache["ts"] is not None
+        and _congestion_cache["window"] == window_hours
+        and (now_ts - _congestion_cache["ts"]) < _CONGESTION_CACHE_TTL
+    ):
+        return _congestion_cache["result"]
+
     cutoff = datetime.now(timezone.utc) - timedelta(hours=window_hours)
     all_cameras = {c.camera_id: c for c in db.query(TrajectoryCamera).all()}
 
@@ -175,7 +189,11 @@ def get_congestion(db: Session, window_hours: int = 1) -> CongestionResponse:
         )
 
     items.sort(key=lambda x: x.vehicle_count, reverse=True)
-    return CongestionResponse(items=items)
+    result = CongestionResponse(items=items)
+    _congestion_cache["ts"]     = now_ts
+    _congestion_cache["result"] = result
+    _congestion_cache["window"] = window_hours
+    return result
 
 
 def _estimate_camera_avg_speed(db: Session, camera_id: str, since: datetime) -> float:

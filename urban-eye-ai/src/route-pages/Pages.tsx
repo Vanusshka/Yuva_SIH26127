@@ -508,7 +508,9 @@ export function VehicleSearch() {
           Search any verified plate number from processed videos.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-          <span style={{ fontSize: 9, color: 'var(--muted-foreground)', alignSelf: 'center' }}>Quick search:</span>
+          <span style={{ fontSize: 9, color: 'var(--muted-foreground)', alignSelf: 'center' }}>
+            Synthetic dataset plates:
+          </span>
           {['TS09AB1234','TS08CD5678','AP09EF2468','TS10GH1357','KA05JK7890',
             'TS11LM4821','TS12NP6314','AP10QR9753','TS13ST2046','TS14UV8162'].map(p => (
             <button
