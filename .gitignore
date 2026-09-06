@@ -53,3 +53,18 @@ Thumbs.db
 
 # IDE
 .vscode/settings.json
+
+# Old frontend folder name (renamed to frontend/)
+urban-eye-ai/
+
+# Frontend build artifacts
+frontend/.next/
+frontend/node_modules/
+frontend/.env.local
+
+# Root-level loose files
+best.pt
+plate_detector_best_fast.pt
+paddleocr_infer.zip
+plates_inference_model_*.zip
+plates_inference_model_v2*/
