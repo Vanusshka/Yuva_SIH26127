@@ -4,7 +4,7 @@
  * Central API layer that connects the frontend to the SIH26127 FastAPI backend.
  *
  * Backend: backend/  (FastAPI, Phase 8, running at NEXT_PUBLIC_API_URL)
- * Docs:    http://localhost:8000/docs
+ * Docs:    https://urban-eye-backend-ssq1.onrender.com/docs
  *
  * All functions return typed responses. On network failure they throw an
  * ApiError so callers can show user-facing error messages.
@@ -37,7 +37,7 @@ export class ApiError extends Error {
 async function apiFetch<T>(
   path: string,
   options?: RequestInit,
-  timeoutMs = 10_000,
+  timeoutMs = 60_000,
 ): Promise<T> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -247,7 +247,7 @@ export async function fetchHealth(): Promise<HealthResponse> {
  * Connects to: Overview page KPI cards, TrafficAnalytics charts
  */
 export async function fetchAnalytics(windowHours = 24): Promise<AnalyticsResponse> {
-  return apiFetch<AnalyticsResponse>(`/analytics?window_hours=${windowHours}`)
+  return apiFetch<AnalyticsResponse>(`/analytics?window_hours=${windowHours}`, undefined, 60_000)
 }
 
 /**
@@ -265,7 +265,7 @@ export async function fetchVehicles(
     offset: String(offset),
     ...(statusFilter ? { status_filter: statusFilter } : {}),
   })
-  return apiFetch<VehicleListResponse>(`/vehicles?${params}`)
+  return apiFetch<VehicleListResponse>(`/vehicles?${params}`, undefined, 60_000)
 }
 
 /**
@@ -274,7 +274,7 @@ export async function fetchVehicles(
  * Connects to: VehicleSearch → Track Vehicle
  */
 export async function fetchVehicle(plate: string): Promise<VehicleRecord> {
-  return apiFetch<VehicleRecord>(`/vehicles/${encodeURIComponent(plate.toUpperCase())}`)
+  return apiFetch<VehicleRecord>(`/vehicles/${encodeURIComponent(plate.toUpperCase())}`, undefined, 60_000)
 }
 
 /**
@@ -285,6 +285,7 @@ export async function fetchVehicle(plate: string): Promise<VehicleRecord> {
 export async function fetchTrajectory(plate: string): Promise<TrajectoryResponse> {
   return apiFetch<TrajectoryResponse>(
     `/api/trajectory/${encodeURIComponent(plate.toUpperCase())}`,
+    undefined, 60_000,
   )
 }
 
@@ -294,7 +295,7 @@ export async function fetchTrajectory(plate: string): Promise<TrajectoryResponse
  * Connects to: Alerts page, Overview active alerts
  */
 export async function fetchAlerts(limit = 50): Promise<AlertsResponse> {
-  return apiFetch<AlertsResponse>(`/alerts?limit=${limit}`)
+  return apiFetch<AlertsResponse>(`/alerts?limit=${limit}`, undefined, 60_000)
 }
 
 /**
@@ -303,7 +304,7 @@ export async function fetchAlerts(limit = 50): Promise<AlertsResponse> {
  * Connects to: CameraNetwork page, CityMap
  */
 export async function fetchCameras(): Promise<CameraItem[]> {
-  return apiFetch<CameraItem[]>('/api/cameras')
+  return apiFetch<CameraItem[]>('/api/cameras', undefined, 60_000)
 }
 
 // ── City Map analytics ────────────────────────────────────────────────────────
@@ -336,12 +337,12 @@ export interface CongestionResponse {
 
 /** GET /analytics/traffic-density?window_hours=1 */
 export async function fetchTrafficDensity(windowHours = 1): Promise<TrafficDensityResponse> {
-  return apiFetch<TrafficDensityResponse>(`/analytics/traffic-density?window_hours=${windowHours}`)
+  return apiFetch<TrafficDensityResponse>(`/analytics/traffic-density?window_hours=${windowHours}`, undefined, 60_000)
 }
 
 /** GET /analytics/congestion?window_hours=1 */
 export async function fetchCongestion(windowHours = 1): Promise<CongestionResponse> {
-  return apiFetch<CongestionResponse>(`/analytics/congestion?window_hours=${windowHours}`)
+  return apiFetch<CongestionResponse>(`/analytics/congestion?window_hours=${windowHours}`, undefined, 60_000)
 }
 
 // ── Camera processing result ───────────────────────────────────────────────────
