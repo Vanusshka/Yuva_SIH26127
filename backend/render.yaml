@@ -24,7 +24,7 @@ services:
           name: urbaneye-db
           property: connectionString
       - key: FRONTEND_URL
-        sync: false
+        value: "https://yuva-sih-26127.vercel.app"
       # ── Model download URLs (set these in Render dashboard) ───────────────
       # Upload your .pt files somewhere accessible (Google Drive direct link,
       # GitHub Releases, S3 pre-signed URL, etc.) then paste the URLs here.
