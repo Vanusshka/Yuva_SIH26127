@@ -291,17 +291,22 @@ export function Overview() {
   // Initial load
   useEffect(() => { load() }, [load])
 
-  // Auto-retry every 15s while backend is unreachable (handles Render cold start)
+  // Auto-retry every 8s while backend is unreachable
   useEffect(() => {
-    if (!error) return          // already connected — stop retrying
-    const t = setInterval(() => {
-      load()
-    }, 15_000)
+    if (!error) return
+    const t = setInterval(load, 8_000)
     return () => clearInterval(t)
   }, [error, load])
 
+  // Also retry immediately when the window regains focus (user switches back to tab)
+  useEffect(() => {
+    if (!error) return
+    const onFocus = () => load()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [error, load])
+
   const d = analytics
-  const isDemo = error !== null
 
   // When backend is offline, show zeros/empty rather than fake numbers
   const kpis = d ? [
@@ -327,14 +332,8 @@ export function Overview() {
 
   return (
     <>
-      {loading && <Loading label="Fetching live analyticsâ€¦" />}
+      {loading && <Loading label="Fetching live analytics…" />}
       {error && !loading && <ErrorBanner message={error} onRetry={load} />}
-      {isDemo && !loading && (
-        <div style={{ marginBottom: 14, fontSize: 11, color: 'var(--muted-foreground)', padding: '8px 12px', background: 'var(--muted)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>Backend waking up — retrying automatically every 15 seconds…</span>
-          <button onClick={load} style={{ marginLeft: 'auto', fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--primary)', cursor: 'pointer' }}>Retry now</button>
-        </div>
-      )}
 
       <div className="kpi-grid">
         {kpis.map(([label, value]) => (
