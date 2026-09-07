@@ -102,12 +102,11 @@ function Loading({ label = 'Loadingâ€¦' }: { label?: string }) {
 
 /** Error banner with optional retry */
 function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  // If the backend is simply unreachable and demo mode is on, show a gentle
-  // info notice instead of a scary red banner.
+  // Network errors get a softer blue banner instead of a scary red one
   const isNetworkError = message.includes('Failed to fetch') ||
-    message.includes('Network error') || message.includes('timed out')
-  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
-  const gentle = isNetworkError && demoMode
+    message.includes('Network error') || message.includes('timed out') ||
+    message.includes('Cannot reach backend')
+  const gentle = isNetworkError
 
   return (
     <div style={{
@@ -121,7 +120,7 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => vo
       <AlertCircle size={13} style={{ flexShrink: 0 }} />
       <span style={{ flex: 1 }}>
         {gentle
-          ? 'Backend is offline - showing demo data. Start the backend server to see live results.'
+          ? 'Backend is waking up — data will load automatically once it responds.'
           : message}
       </span>
       {onRetry && (
