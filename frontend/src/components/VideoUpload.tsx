@@ -686,7 +686,7 @@ export default function VideoUpload() {
                 </strong>
                 <p style={{ color: '#b94040', fontSize: 11, margin: 0 }}>{errorMsg}</p>
                 <p style={{ color: '#c06060', fontSize: 10, margin: '6px 0 0' }}>
-                  Make sure the backend is running at {process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}
+                  Make sure the backend is reachable and try again.
                 </p>
               </div>
             </div>

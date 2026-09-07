@@ -105,7 +105,8 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => vo
   // Network errors get a softer blue banner instead of a scary red one
   const isNetworkError = message.includes('Failed to fetch') ||
     message.includes('Network error') || message.includes('timed out') ||
-    message.includes('Cannot reach backend')
+    message.includes('Cannot reach backend') || message.includes('Request timed out') ||
+    message.includes('AbortError') || message.includes('network')
   const gentle = isNetworkError
 
   return (
