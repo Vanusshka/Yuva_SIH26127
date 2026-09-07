@@ -33,14 +33,17 @@ export class ApiError extends Error {
 }
 
 // ── Core fetch helper ─────────────────────────────────────────────────────────
+// RENDER_TIMEOUT: 60000ms — must survive Render free tier cold start (~50s)
+const RENDER_TIMEOUT = 60000
 
 async function apiFetch<T>(
   path: string,
   options?: RequestInit,
-  timeoutMs = 60_000,
+  timeoutMs?: number,
 ): Promise<T> {
+  const ms = timeoutMs ?? RENDER_TIMEOUT
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const timer = setTimeout(() => controller.abort(), ms)
 
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
