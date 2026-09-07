@@ -236,7 +236,7 @@ export interface ProcessResponse {
  * Extended health check with DB connection status and stats.
  */
 export async function fetchHealth(): Promise<HealthResponse> {
-  return apiFetch<HealthResponse>('/health')
+  return apiFetch<HealthResponse>('/health', undefined, 60_000) // 60s — handles Render cold start (~30s)
 }
 
 /**
