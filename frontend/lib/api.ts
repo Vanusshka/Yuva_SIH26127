@@ -10,7 +10,7 @@
  * ApiError so callers can show user-facing error messages.
  */
 
-// ── Config ────────────────────────────────────────────────────────────────────
+// ── Config ──────────────────────────────────────── v2 2026-09-08 ────────────
 
 const BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ||
