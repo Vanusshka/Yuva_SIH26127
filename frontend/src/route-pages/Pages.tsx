@@ -276,20 +276,29 @@ export function Overview() {
     try {
       const data = await fetchAnalytics(24)
       setAnalytics(data)
+      setError(null)
     } catch (err) {
       const msg = err instanceof ApiError
         ? `Backend error: ${err.detail}`
-        : 'Cannot reach backend. Is it running at localhost:8000?'
+        : 'Cannot reach backend. It may be starting up — please wait a moment and retry.'
       setError(msg)
-      // DO NOT fall back to DEMO_ANALYTICS - show empty state so users
-      // know the data is not real. Analytics remain null until backend responds.
       setAnalytics(null)
     } finally {
       setLoading(false)
     }
   }, [])
 
+  // Initial load
   useEffect(() => { load() }, [load])
+
+  // Auto-retry every 15s while backend is unreachable (handles Render cold start)
+  useEffect(() => {
+    if (!error) return          // already connected — stop retrying
+    const t = setInterval(() => {
+      load()
+    }, 15_000)
+    return () => clearInterval(t)
+  }, [error, load])
 
   const d = analytics
   const isDemo = error !== null
@@ -321,12 +330,9 @@ export function Overview() {
       {loading && <Loading label="Fetching live analyticsâ€¦" />}
       {error && !loading && <ErrorBanner message={error} onRetry={load} />}
       {isDemo && !loading && (
-        <div style={{ marginBottom: 14, fontSize: 11, color: 'var(--muted-foreground)', padding: '8px 12px', background: 'var(--muted)', borderRadius: 6 }}>
-          Backend offline - showing empty state. Start the backend at&nbsp;
-          <code style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>
-            localhost:8000
-          </code>
-          &nbsp;to see live data.
+        <div style={{ marginBottom: 14, fontSize: 11, color: 'var(--muted-foreground)', padding: '8px 12px', background: 'var(--muted)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>Backend waking up — retrying automatically every 15 seconds…</span>
+          <button onClick={load} style={{ marginLeft: 'auto', fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)', background: 'transparent', color: 'var(--primary)', cursor: 'pointer' }}>Retry now</button>
         </div>
       )}
 
@@ -399,7 +405,7 @@ function LiveAlertList({ limit }: { limit: number }) {
   if (error) {
     return (
       <p style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '10px 0' }}>
-        Unable to load alerts - backend offline.
+        Backend waking up — retrying automatically…
       </p>
     )
   }
@@ -760,6 +766,11 @@ export function TrafficAnalytics() {
   }, [])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (!error) return
+    const t = setInterval(load, 15_000)
+    return () => clearInterval(t)
+  }, [error, load])
 
   const d = analytics
   const trendData = d?.traffic_trends.map(t => t.vehicle_count) ?? []
@@ -857,6 +868,11 @@ export function Alerts() {
   }, [])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (!error) return
+    const t = setInterval(load, 15_000)
+    return () => clearInterval(t)
+  }, [error, load])
 
   const filteredAlerts = (data?.alerts ?? []).filter(a =>
     a.alert_type.toLowerCase().includes(search.toLowerCase()) ||
