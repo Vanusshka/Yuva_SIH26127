@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-// Build: 2026-09-07b
+// Build: 2026-09-07c — hardcoded Render URL fallback
 const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,

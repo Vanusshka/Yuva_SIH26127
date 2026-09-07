@@ -37,7 +37,7 @@ const EXAMPLE_QUERIES = [
 
 const BASE_URL =
   (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL?.replace(/\/$/, '')) ||
-  'http://localhost:8000'
+  'https://urban-eye-backend-ssq1.onrender.com'
 
 // ── confidence badge ──────────────────────────────────────────────────────────
 function ConfidenceBadge({ c }: { c: string }) {

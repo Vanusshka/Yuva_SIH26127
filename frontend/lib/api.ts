@@ -12,8 +12,10 @@
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000'
+const BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ||
+  'https://urban-eye-backend-ssq1.onrender.com'
+)
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
