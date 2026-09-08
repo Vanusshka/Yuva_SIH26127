@@ -312,7 +312,7 @@ def _startup():
         except Exception as exc:
             logger.warning("[Startup] Model warmup failed (non-fatal): %s", exc)
 
-    threading.Thread(target=_warmup, daemon=True).start()
+    #threading.Thread(target=_warmup, daemon=True).start()
 
 
 # ── System ─────────────────────────────────────────────────────────────────────
