@@ -248,13 +248,12 @@ def _estimate_camera_avg_speed(db: Session, camera_id: str, since: datetime) -> 
 def get_peak_hours(db: Session) -> PeakHoursResponse:
     rows = (
         db.query(
-            func.strftime("%H", Detection.timestamp).label("hr"),
+            func.extract("hour", Detection.timestamp).label("hr"),
             func.count(Detection.id).label("cnt"),
         )
         .group_by("hr")
         .all()
     )
-
     hour_map: dict[int, int] = {int(r.hr): r.cnt for r in rows if r.hr is not None}
     hours = [
         PeakHourItem(hour=h, vehicle_count=hour_map.get(h, 0))
