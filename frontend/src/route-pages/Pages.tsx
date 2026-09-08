@@ -33,6 +33,7 @@ import {
   type VehicleListResponse, type ManualReviewItem,
   ApiError,
 } from '@/lib/api'
+const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
 // â”€â”€ Dynamic import for CameraCard (avoids SSR issues with localStorage) â”€â”€â”€â”€â”€â”€
 const CameraCardDynamic = dynamic(
