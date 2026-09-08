@@ -215,6 +215,7 @@ app = FastAPI(
 from app.config import FRONTEND_URL as _FRONTEND_URL
 
 _ALLOWED_ORIGINS = [
+    "https://yuva-sih-26127.vercel.app",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://localhost:5174",
