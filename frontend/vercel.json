@@ -9,12 +9,6 @@
       "destination": "/"
     }
   ],
-  "crons": [
-    {
-      "path": "/api/keepalive",
-      "schedule": "*/14 * * * *"
-    }
-  ],
   "env": {
     "NEXT_PUBLIC_API_URL": "https://urban-eye-backend-ssq1.onrender.com",
     "NEXT_PUBLIC_DEMO_MODE": "false"
