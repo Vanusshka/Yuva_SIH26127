@@ -1,23 +1,13 @@
 /** @type {import('next').NextConfig} */
-// Build: 2026-09-07-final
+
 const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+
   images: {
     unoptimized: true,
   },
-  // SPA fallback: rewrite all non-Next-internal paths to / so React Router
-  // can handle client-side navigation.
-  // On Vercel this is also defined in vercel.json — both are fine together.
-  async rewrites() {
-    return [
-      {
-        source: '/((?!api|_next|static|favicon|public).*)',
-        destination: '/',
-      },
-    ]
-  },
-}
+};
 
-export default nextConfig
+export default nextConfig;

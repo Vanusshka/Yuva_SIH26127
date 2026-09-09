@@ -149,7 +149,7 @@ from app.schemas.analytics import (
 )
 
 # ── Phase 7 ───────────────────────────────────────────────────────────────────
-from app.services.ingest_service import ingest_image, ingest_video
+from app.services.ingest_service import ingest_video
 from app.services.p7_analytics_service import (
     get_vehicle_type_breakdown,
     get_camera_stats,
