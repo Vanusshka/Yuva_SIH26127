@@ -448,12 +448,20 @@ export function VehicleSearch() {
   const [error,    setError]    = useState<string | null>(null)
   const [knownPlates, setKnownPlates] = useState<string[]>([])
 
-  // Load real plates from the database on mount
+  // Load verified plates from the database on mount
+  // Only show plates that look like valid Indian registration numbers
+  // and have high confidence — filters out partial/noise OCR reads
   useEffect(() => {
-    fetchVehicles(50).then(res => {
+    fetchVehicles(200).then(res => {
       const plates = res.vehicles
+        .filter(v =>
+          v.plate_number &&
+          v.plate_number.length >= 6 &&          // min length for a real plate
+          v.confidence >= 0.80 &&                // high confidence only
+          /^[A-Z]{2}/.test(v.plate_number) &&    // starts with 2 state letters
+          /\d/.test(v.plate_number)              // contains at least one digit
+        )
         .map(v => v.plate_number)
-        .filter(Boolean)
         .slice(0, 12)
       setKnownPlates(plates)
     }).catch(() => {/* backend offline — show nothing */})
