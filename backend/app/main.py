@@ -794,7 +794,7 @@ async def process_image_p7(
     file         : UploadFile    = File(...,  description="Traffic image (JPEG/PNG/BMP/WebP)"),
     camera_id    : str           = Form(default="CAM_001", description="Camera ID (from cameras.json)"),
     timestamp    : Optional[str] = Form(default=None,      description="ISO-8601 timestamp (defaults to UTC now)"),
-    privacy_mode : bool          = Form(default=True,       description="Blur face regions before detection. Default: True (recommended for all deployments)."),
+    privacy_mode : bool          = Form(default=False,      description="Blur face regions before detection. Default: False for demo."),
     db           : Session       = Depends(get_db),
 ):
     """
@@ -862,9 +862,9 @@ async def process_video_p7(
         "(round-robin per tracked vehicle) so trajectory/GIS features can be demonstrated "
         "from a single video source. Detection data is real; camera locations are synthetic."
     )),
-    privacy_mode     : bool          = Form(default=True,       description=(
+    privacy_mode     : bool          = Form(default=False,      description=(
         "Blur detected face regions on every frame BEFORE plate detection runs. "
-        "Recommended True for all real deployments. Default: PRIVACY_MODE from config."
+        "Set True for real public deployments. Default: False for demo (face blur reduces OCR accuracy)."
     )),
     db               : Session       = Depends(get_db),
 ):
