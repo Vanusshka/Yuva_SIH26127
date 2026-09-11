@@ -1,6 +1,6 @@
-'use client'
+﻿'use client'
 /**
- * VideoUpload — SIH26127 UrbanEye AI
+ * VideoUpload â€” SIH26127 UrbanEye AI
  * ====================================
  * Full video upload & processing feature.
  *
@@ -8,10 +8,10 @@
  * Response type: VideoIngestResponse
  *
  * Stages shown during processing:
- *   Uploading video → Detecting vehicles → Tracking vehicles →
- *   Detecting number plates → Extracting plate text → Generating analytics
+ *   Uploading video â†’ Detecting vehicles â†’ Tracking vehicles â†’
+ *   Detecting number plates â†’ Extracting plate text â†’ Generating analytics
  *
- * All result data comes from the real backend — no fake/mock values.
+ * All result data comes from the real backend â€” no fake/mock values.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react'
@@ -27,11 +27,11 @@ import {
   ApiError,
 } from '@/lib/api'
 
-// ── constants ─────────────────────────────────────────────────────────────────
+// â”€â”€ constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const STORAGE_KEY = 'urbanEye_videoUpload_v1'
+const STORAGE_KEY = 'urbanEye_videoUpload_v2'
 
-/** Serialisable subset of state persisted to sessionStorage */
+/** Serialisable subset of state persisted to localStorage */
 interface PersistedState {
   fileName    : string
   fileSize    : number
@@ -52,10 +52,10 @@ const CAMERAS = [
 ]
 
 const FRAME_SKIP_OPTIONS = [
-  { value: 5,  label: 'High quality  (every 5th frame — slowest)' },
+  { value: 5,  label: 'High quality  (every 5th frame â€” slowest)' },
   { value: 10, label: 'Balanced      (every 10th frame)' },
-  { value: 20, label: 'Fast          (every 20th frame — recommended)' },
-  { value: 30, label: 'Quick scan    (every 30th frame — fastest)' },
+  { value: 20, label: 'Fast          (every 20th frame â€” recommended)' },
+  { value: 30, label: 'Quick scan    (every 30th frame â€” fastest)' },
 ]
 
 /** Processing pipeline stages */
@@ -71,7 +71,7 @@ const STAGES = [
 type StageId = typeof STAGES[number]['id']
 type UploadState = 'idle' | 'processing' | 'done' | 'error'
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -90,7 +90,7 @@ function formatTime(iso: string): string {
   try { return new Date(iso).toLocaleTimeString() } catch { return iso }
 }
 
-// ── sub-components ────────────────────────────────────────────────────────────
+// â”€â”€ sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function StageRow({
   stage, state,
@@ -155,7 +155,7 @@ function PlateChip({ plate, lowConf }: { plate: string; lowConf?: boolean }) {
   )
 }
 
-// ── main component ────────────────────────────────────────────────────────────
+// â”€â”€ main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function VideoUpload() {
   // File state
@@ -186,10 +186,10 @@ export default function VideoUpload() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const timerRef     = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // ── Restore persisted state on mount ─────────────────────────────────────
+  // â”€â”€ Restore persisted state on mount â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY)
+      const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) return
       const saved: PersistedState = JSON.parse(raw)
       // Restore the serialisable fields
@@ -200,16 +200,16 @@ export default function VideoUpload() {
         setResult(saved.result)
         setUploadState(saved.uploadState)
         // Restore minimal file info for the "Processing Info" panel
-        // File object itself cannot be restored — show info from result
+        // File object itself cannot be restored â€” show info from result
       }
     } catch {
-      // Corrupt storage — ignore
-      sessionStorage.removeItem(STORAGE_KEY)
+      // Corrupt storage â€” ignore
+      localStorage.removeItem(STORAGE_KEY)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])   // run once on mount only
 
-  // ── Persist serialisable state on every relevant change ──────────────────
+  // â”€â”€ Persist serialisable state on every relevant change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     // Only persist when there is something worth saving
     if (uploadState === 'idle' && !result) return
@@ -223,9 +223,9 @@ export default function VideoUpload() {
         elapsedSec,
         result,
       }
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
     } catch {
-      // Storage full or unavailable — ignore
+      // Storage full or unavailable â€” ignore
     }
   }, [uploadState, result, cameraId, frameSkip, elapsedSec, file])
 
@@ -249,7 +249,7 @@ export default function VideoUpload() {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [uploadState, startTime])
 
-  // ── file validation ──────────────────────────────────────────────────────
+  // â”€â”€ file validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const validateAndSetFile = useCallback((f: File) => {
     setFileError(null)
@@ -295,15 +295,15 @@ export default function VideoUpload() {
     setFileError(null)
     setDoneStages(new Set())
     setActiveStage(null)
-    sessionStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(STORAGE_KEY)
   }, [previewUrl])
 
-  // ── processing pipeline ──────────────────────────────────────────────────
+  // â”€â”€ processing pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
    * Simulates the multi-stage progress display while the real XHR runs.
    * Stages after 'uploading' are time-estimated because the backend doesn't
-   * stream stage events — the real work happens server-side.
+   * stream stage events â€” the real work happens server-side.
    */
   const runStageAnimation = useCallback(async (totalFrames?: number) => {
     const estimate = (totalFrames ?? 300) / Math.max(frameSkip, 1)
@@ -334,10 +334,10 @@ export default function VideoUpload() {
     setStartTime(Date.now())
     setElapsedSec(0)
 
-    // Cancellable stage animation — steps through stages based on frame count
+    // Cancellable stage animation â€” steps through stages based on frame count
     // estimate. When the XHR returns first, cancel() stops the animation and
     // the result is shown immediately. The last stage ('analytics') stays active
-    // until the backend actually responds — it never locks permanently.
+    // until the backend actually responds â€” it never locks permanently.
     let cancelled = false
     const cancel = () => { cancelled = true }
 
@@ -360,7 +360,7 @@ export default function VideoUpload() {
       if (!cancelled) setActiveStage('analytics')
     }
 
-    animateStages()   // run concurrently — does NOT block the XHR
+    animateStages()   // run concurrently â€” does NOT block the XHR
 
     try {
       const apiResult = await processVideo(file, cameraId, frameSkip, (pct) => {
@@ -368,7 +368,7 @@ export default function VideoUpload() {
         if (pct === 100) setActiveStage('analytics') // jump to analytics once upload done
       })
 
-      // Backend responded — cancel animation, mark all done, show results
+      // Backend responded â€” cancel animation, mark all done, show results
       cancel()
       setDoneStages(new Set(STAGES.map(s => s.id)))
       setActiveStage(null)
@@ -391,14 +391,14 @@ export default function VideoUpload() {
     setStartTime(null)
   }, [clearFile])
 
-  // ── derived result stats ─────────────────────────────────────────────────
+  // â”€â”€ derived result stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  // Build verified plates map (VERIFIED status only — not partials)
+  // Build verified plates map (VERIFIED status only â€” not partials)
   const uniquePlatesWithConf = result
     ? (() => {
         const map = new Map<string, { maxConf: number; lowConf: boolean; count: number }>()
         result.detections.forEach(d => {
-          // Only count VERIFIED plates — partial/fragment/unreadable are NOT unique plates
+          // Only count VERIFIED plates â€” partial/fragment/unreadable are NOT unique plates
           const displayText = d.plate_status === 'verified' ? d.plate_number : null
           if (!displayText) return
           const existing = map.get(displayText)
@@ -434,7 +434,7 @@ export default function VideoUpload() {
         .slice(0, 15)
     : []
 
-  // ── render ────────────────────────────────────────────────────────────────
+  // â”€â”€ render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -444,7 +444,7 @@ export default function VideoUpload() {
         .video-upload-btn:hover { opacity: .85; }
       `}</style>
 
-      {/* ── Upload zone ───────────────────────────────────────────────────── */}
+      {/* â”€â”€ Upload zone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {!file && (
         <div
           className={`panel${dragOver ? ' upload-zone-active' : ''}`}
@@ -469,7 +469,7 @@ export default function VideoUpload() {
               Drop a traffic video here
             </h2>
             <p style={{ color: 'var(--muted-foreground)', fontSize: 12, margin: '0 0 22px' }}>
-              Supports MP4, AVI, MOV, MKV &nbsp;·&nbsp; Maximum {MAX_SIZE_GB} GB
+              Supports MP4, AVI, MOV, MKV &nbsp;Â·&nbsp; Maximum {MAX_SIZE_GB} GB
             </p>
 
             <button
@@ -503,7 +503,7 @@ export default function VideoUpload() {
         </div>
       )}
 
-      {/* ── File selected — preview + config ─────────────────────────────── */}
+      {/* â”€â”€ File selected â€” preview + config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {file && uploadState !== 'done' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 17, marginBottom: 20 }}>
 
@@ -555,7 +555,7 @@ export default function VideoUpload() {
                   ['File name', file.name],
                   ['File size', formatBytes(file.size)],
                   ['Format',    '.' + file.name.split('.').pop()!.toUpperCase()],
-                  ['Status',    uploadState === 'processing' ? 'Processing…' : 'Ready'],
+                  ['Status',    uploadState === 'processing' ? 'Processingâ€¦' : 'Ready'],
                 ].map(([label, value]) => (
                   <div key={label}>
                     <span className="kpi-label">{label}</span>
@@ -625,8 +625,8 @@ export default function VideoUpload() {
                   <p>
                     {uploadState === 'processing'
                       ? activeStage === 'analytics'
-                        ? `Waiting for server… ${formatDuration(elapsedSec)}`
-                        : `Running… ${formatDuration(elapsedSec)}`
+                        ? `Waiting for serverâ€¦ ${formatDuration(elapsedSec)}`
+                        : `Runningâ€¦ ${formatDuration(elapsedSec)}`
                       : 'Ready to process'}
                   </p>
                 </div>
@@ -642,7 +642,7 @@ export default function VideoUpload() {
                 {uploadState === 'processing' && uploadPct < 100 && (
                   <div style={{ margin: '10px 0 4px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
-                      <span>Uploading to backend…</span>
+                      <span>Uploading to backendâ€¦</span>
                       <span>{uploadPct}%</span>
                     </div>
                     <div style={{ height: 4, background: '#1a2f44', borderRadius: 3, overflow: 'hidden' }}>
@@ -671,7 +671,7 @@ export default function VideoUpload() {
         </div>
       )}
 
-      {/* ── Error state ────────────────────────────────────────────────────── */}
+      {/* â”€â”€ Error state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {uploadState === 'error' && errorMsg && (
         <div className="panel" style={{ marginBottom: 20 }}>
           <div style={{ padding: '20px 18px' }}>
@@ -702,7 +702,7 @@ export default function VideoUpload() {
         </div>
       )}
 
-      {/* ── Process button ─────────────────────────────────────────────────── */}
+      {/* â”€â”€ Process button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {file && uploadState === 'idle' && (
         <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
           <button
@@ -725,7 +725,7 @@ export default function VideoUpload() {
         </div>
       )}
 
-      {/* ── Results ────────────────────────────────────────────────────────── */}
+      {/* â”€â”€ Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {result && (uploadState === 'done' || uploadState === 'error') && (
         <>
           {/* Success banner */}
@@ -738,9 +738,9 @@ export default function VideoUpload() {
             <div style={{ flex: 1 }}>
               <strong style={{ color: '#1a7a55', fontSize: 13 }}>Processing complete</strong>
               <p style={{ color: '#3a9e73', fontSize: 10, margin: '2px 0 0' }}>
-                {result.source_file} processed in {formatDuration(elapsedSec)} ·
+                {result.source_file} processed in {formatDuration(elapsedSec)} Â·
                 {result.frames_processed} frames analysed (every {result.frame_skip}th frame)
-                {!file && <span style={{ color: '#5a9e7a' }}> · Results restored from session — upload the video again to re-process.</span>}
+                {!file && <span style={{ color: '#5a9e7a' }}> Â· Results restored from session â€” upload the video again to re-process.</span>}
               </p>
             </div>
             <button className="date-button" onClick={handleReset} style={{ fontSize: 11 }}>
@@ -775,8 +775,8 @@ export default function VideoUpload() {
                 <div>
                   <h2>Detected Number Plates</h2>
                   <p>
-                    {result.unique_plates.length} verified · {(result.partial_plates?.length ?? 0)} partial
-                    &nbsp;— only evidence-supported results shown
+                    {result.unique_plates.length} verified Â· {(result.partial_plates?.length ?? 0)} partial
+                    &nbsp;â€” only evidence-supported results shown
                   </p>
                 </div>
               </div>
@@ -811,7 +811,7 @@ export default function VideoUpload() {
                               <td>{count}</td>
                               <td>
                                 <span className="confidence">
-                                  {maxConf > 0 ? `${(maxConf * 100).toFixed(1)}%` : '—'}
+                                  {maxConf > 0 ? `${(maxConf * 100).toFixed(1)}%` : 'â€”'}
                                 </span>
                               </td>
                               <td>
@@ -829,7 +829,7 @@ export default function VideoUpload() {
                     {(result.partial_plates?.length ?? 0) > 0 && (
                       <div style={{ marginTop: 16, padding: '10px 12px', background: '#1a1200', borderRadius: 7, border: '1px solid #f8d38b' }}>
                         <p style={{ fontSize: 10, fontWeight: 700, color: '#c28118', margin: '0 0 8px', letterSpacing: '.5px' }}>
-                          PARTIAL READS — incomplete OCR, not verified plates
+                          PARTIAL READS â€” incomplete OCR, not verified plates
                         </p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                           {result.partial_plates!.map(p => (
@@ -846,7 +846,7 @@ export default function VideoUpload() {
                   <p style={{ color: 'var(--muted-foreground)', fontSize: 11, padding: '10px 0' }}>
                     No verified plates found. Try lowering the frame skip for more coverage.
                     {(result.partial_plates?.length ?? 0) > 0 && (
-                      <span> Partial reads exist — see above.</span>
+                      <span> Partial reads exist â€” see above.</span>
                     )}
                   </p>
                 )}
@@ -912,7 +912,7 @@ export default function VideoUpload() {
                   {result.warnings.length > 0 && (
                     <div style={{ marginTop: 10, padding: '8px 10px', background: '#1a1000', borderRadius: 6 }}>
                       {result.warnings.map((w, i) => (
-                        <p key={i} style={{ fontSize: 9, color: '#c28118', margin: '2px 0' }}>⚠ {w}</p>
+                        <p key={i} style={{ fontSize: 9, color: '#c28118', margin: '2px 0' }}>âš  {w}</p>
                       ))}
                     </div>
                   )}
@@ -949,7 +949,7 @@ export default function VideoUpload() {
                           <td>
                             <div className="plate">
                               <div className={`plate-mark ${d.low_confidence ? 'amber' : ''}`} />
-                              {d.plate_number || d.partial_text || '—'}
+                              {d.plate_number || d.partial_text || 'â€”'}
                             </div>
                           </td>
                           <td style={{ textTransform: 'capitalize' }}>{d.vehicle_type}</td>
@@ -957,7 +957,7 @@ export default function VideoUpload() {
                           <td>{formatTime(d.timestamp)}</td>
                           <td>
                             <span className="confidence">
-                              {d.ocr_confidence != null ? `${(d.ocr_confidence * 100).toFixed(1)}%` : '—'}
+                              {d.ocr_confidence != null ? `${(d.ocr_confidence * 100).toFixed(1)}%` : 'â€”'}
                             </span>
                           </td>
                           <td>
@@ -991,7 +991,7 @@ export default function VideoUpload() {
           {/* Processing note from backend */}
           {result.processing_note && (
             <p style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 8 }}>
-              ℹ {result.processing_note}
+              â„¹ {result.processing_note}
             </p>
           )}
         </>
@@ -999,3 +999,5 @@ export default function VideoUpload() {
     </div>
   )
 }
+
+
