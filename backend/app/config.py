@@ -85,7 +85,7 @@ PLATE_CONF_THRESH = 0.20   # lowered from 0.30 — catches more plate candidates
 # ── OCR ───────────────────────────────────────────────────────────────────────
 # Switch to "paddleocr" to use the fine-tuned SVTR_LCNet recognizer.
 # Switch to "easyocr" or "tesseract" for the generic fallbacks.
-OCR_ENGINE           = "paddleocr"  # fine-tuned on your dataset — use single worker to avoid cold start per worker
+OCR_ENGINE           = os.environ.get("OCR_ENGINE", "easyocr")  # paddleocr_infer model files not present; use easyocr
 OCR_LANGUAGES        = ["en"]
 
 # ── PaddleOCR fine-tuned recognizer paths ────────────────────────────────────
