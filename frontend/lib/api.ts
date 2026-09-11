@@ -10,12 +10,11 @@
  * ApiError so callers can show user-facing error messages.
  */
 
-// ── Config ──────────────────────────────────────── v2 2026-09-08 ────────────
+import { API_BASE_URL, API_TIMEOUT_MS } from './config'
 
-const BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ||
-  'https://urban-eye-backend-ssq1.onrender.com'
-)
+// ── Config ────────────────────────────────────────────────────────────────────
+
+const BASE_URL = API_BASE_URL
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
@@ -34,7 +33,7 @@ export class ApiError extends Error {
 
 // ── Core fetch helper ─────────────────────────────────────────────────────────
 // RENDER_TIMEOUT: 60000ms — must survive Render free tier cold start (~50s)
-const RENDER_TIMEOUT = 60000
+const RENDER_TIMEOUT = API_TIMEOUT_MS
 
 async function apiFetch<T>(
   path: string,
