@@ -435,6 +435,42 @@ function LiveAlertList({ limit }: { limit: number }) {
   )
 }
 
+// ===============================================================================
+// TRAJECTORY MAP  — Leaflet map showing camera stops + movement lines
+// ===============================================================================
+
+function TrajMap({ stops, hops, status }: {
+  stops: TrajectoryResponse['stops']
+  hops:  TrajectoryResponse['hops']
+  status: string
+}) {
+  const mapRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node || typeof window === 'undefined') return
+    if ((node as any)._leaflet_id) return
+    import('leaflet').then(L => {
+      const lineColor = status === 'NORMAL' ? '#24ae76'
+                      : status === 'FAST'   ? '#f59e0b'
+                      : '#e53e3e'
+      const map = L.map(node, { zoomControl: true, attributionControl: false })
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map)
+      if (!stops || stops.length === 0) { map.setView([17.44, 78.43], 12); return }
+      const latlngs: [number, number][] = stops.map(s => [s.latitude, s.longitude])
+      L.polyline(latlngs, { color: lineColor, weight: 4, opacity: 0.9, dashArray: status === 'NORMAL' ? undefined : '8 4' }).addTo(map)
+      stops.forEach((s, i) => {
+        const isFirst = i === 0; const isLast = i === stops.length - 1
+        const color = isFirst ? '#24ae76' : isLast ? '#e53e3e' : '#4299e1'
+        const sz = isFirst || isLast ? 16 : 12
+        const icon = L.divIcon({ className: '', html: `<div style="width:${sz}px;height:${sz}px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 0 8px ${color}"></div>`, iconAnchor: [sz/2, sz/2] })
+        L.marker([s.latitude, s.longitude], { icon })
+          .bindPopup(`<b>${s.location}</b><br>${s.camera_id}<br>${new Date(s.timestamp).toLocaleTimeString()}${hops[i] ? `<br>${hops[i].speed_kmh.toFixed(0)} km/h ` + String.fromCharCode(183) + ` ${hops[i].anomaly}` : ''}`)
+          .addTo(map)
+      })
+      map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40], maxZoom: 14 })
+    })
+  }, [stops, hops, status])
+  return <div ref={mapRef} style={{ height: 320, borderRadius: 8, overflow: 'hidden', background: '#1a2535' }} />
+}
+
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // VEHICLE SEARCH PAGE  âœ… live: /vehicles/{plate} + /api/trajectory/{plate}
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -541,11 +577,13 @@ export function VehicleSearch() {
             {knownPlates.map(p => (
               <button
                 key={p}
-                onClick={() => track(p)}
+                onClick={() => { setQuery(p); track(p) }}
                 style={{
                   fontSize: 9, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
-                  background: 'var(--muted)', border: '1px solid var(--border)',
-                  color: 'var(--primary)', fontFamily: 'Courier New, monospace',
+                  background: query === p ? 'var(--primary)' : 'var(--muted)',
+                  border: `1px solid ${query === p ? 'var(--primary)' : 'var(--border)'}`,
+                  color: query === p ? '#000' : 'var(--primary)',
+                  fontFamily: 'Courier New, monospace',
                   fontWeight: 700, letterSpacing: '.3px',
                 }}
               >{p}</button>
@@ -596,17 +634,10 @@ export function VehicleSearch() {
       {traj && (
         <section className="dashboard-grid">
           <Panel title="Trajectory map">
-            <div className="map-panel" style={{ height: 300 }}>
-              <div className="map-art">
-                <div className="road road-a" />
-                <div className="road road-b" />
-                <div className="road road-c" />
-                {stops.slice(0, 5).map((s, i) => (
-                  <div key={i} className={`map-node node-${i + 1}`}><span /></div>
-                ))}
-              </div>
+            <TrajMap stops={stops} hops={traj.hops} status={traj.overall_status} />
+            <div style={{ marginTop: 8, fontSize: 10, color: 'var(--muted-foreground)', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <PlaceholderBadge /> GPS coordinates are real · Lines show movement order
             </div>
-            <PlaceholderBadge /> Map art is illustrative - GPS coordinates are real
           </Panel>
 
           <Panel title="Detection timeline">
